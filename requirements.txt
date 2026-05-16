@@ -1,0 +1,25 @@
+# wukong_ai dependencies
+# Core
+torch>=2.0.0
+torchvision>=0.15.0
+numpy>=1.24.0
+opencv-python>=4.8.0
+
+# Screen capture (at least one required)
+dxcam>=0.0.5          # Fastest: DXGI-based, Windows only
+mss>=9.0.0            # Fallback: cross-platform
+
+# Game input
+pydirectinput>=1.0.0  # DirectX-compatible input
+pynput>=1.7.0         # Keyboard listener for data collection
+
+# Data
+h5py>=3.9.0           # Demo data storage
+Pillow>=10.0.0
+
+# Training utilities
+tensorboard>=2.14.0
+tqdm>=4.65.0
+
+# Optional: YOLOv8 for pose detection
+# ultralytics>=8.0.0

@@ -1,72 +1,105 @@
-# Wukong AI - DQN for Black Myth: Wukong
+# 🐒 wukong_ai
 
-Train AI to play Black Myth: Wukong using Deep Q-Network (DQN) with Experience Replay and Target Network.
+Black Myth: Wukong (黑神话：悟空) combat AI powered by Reinforcement Learning.
 
-## Overview
+Currently training against **虎先锋 (Tiger Vanguard)**.
 
-This project uses Reinforcement Learning to train an AI agent to play Black Myth: Wukong. The agent learns combat skills through real-time interaction with the game, using reward feedback from blood bar detection.
-
-Unlike Supervised Learning, Reinforcement Learning can update its network by itself using reward feedback, meaning we no longer need to collect our own datasets. All training data comes from the real-time interaction between the DQN network and the game.
-
-## Project Structure
+## Architecture
 
 ```
 wukong_ai/
-├── DQN_wukong_training_gpu.py       # DQN training script (TensorFlow GPU)
-├── DQN_wukong_training_gpu_v2.py    # DQN training v2
-├── DQN_wukong_testing_gpu.py        # DQN testing/inference script
-├── DQN_tensorflow_gpu.py            # DQN network (TensorFlow)
-├── DQN_pytorch.py                   # DQN network (PyTorch, incomplete)
-├── PPO_pytorch.py                   # PPO algorithm (PyTorch)
-├── PPO_wukong_training.py           # PPO training for Wukong
-├── grabscreen.py                    # Screen capture utility
-├── directkeys.py                    # Keyboard input simulation
-├── getkeys.py                       # Key recording utility
-├── find_blood_location.py           # Blood bar detection
-├── mask_utils.py                    # Mask utilities
-├── data_video_utils.py              # Video data utilities
-├── demo_deque.py                    # Demo for deque usage
-├── restart.py                       # Game restart utility
-├── utils_test.py                    # Utility tests
-├── utils/
-│   ├── utils_main.py                # Main utility functions
-│   ├── win32_input.py               # Win32 input handling
-│   ├── wukong_win_func.py           # Wukong window functions
-│   ├── wukong_yolo_pose.py          # YOLO pose detection for Wukong
-│   ├── t1.py                        # Test script
-│   ├── t2_yolov8.py                 # YOLOv8 test
-│   ├── t3_yolov8.py                 # YOLOv8 test v3
-│   └── t_demo.py                    # Demo test
-└── requirement.txt                  # Python dependencies
+├── config.py                    # 集中配置（超参数、窗口坐标、动作空间）
+├── requirements.txt
+├── env/
+│   ├── wukong_env.py           # Gym风格RL环境
+│   ├── screen_capture.py       # 高速截图 (dxcam/mss/win32)
+│   ├── blood_detector.py       # HSV色域血量检测
+│   └── action_executor.py      # pydirectinput动作执行
+├── models/
+│   ├── resnet_encoder.py       # ResNet18视觉编码器
+│   └── ppo_agent.py            # PPO Actor-Critic
+├── training/
+│   ├── train_combat.py         # 战斗训练主脚本
+│   └── data_collector.py       # 人类Demo数据采集
+├── pathfinding/
+│   └── behavior_clone.py       # 行为克隆（寻路阶段）
+├── utils_new/
+│   ├── replay_buffer.py        # Rollout缓冲 + 优先经验回放
+│   └── logger.py               # TensorBoard + 文件日志
+└── old/                        # 旧版代码归档（DQN/PPO buggy versions）
 ```
 
-## Algorithm
+## Quick Start
 
-- **DQN** with Experience Replay and Target Network
-- **State**: Game screenshots (grayscale, resized)
-- **Action Space**: 6 discrete actions (attack, dodge, etc.)
-- **Reward**: Based on pixel-detected blood bars (self vs boss)
+### 1. Install dependencies
 
-## Requirements
-
-```
-tensorflow-gpu
-opencv-python
-numpy
-pillow
-pywin32
+```bash
+pip install -r requirements.txt
 ```
 
-## Usage
+### 2. Calibrate blood detection
 
-1. Launch Black Myth: Wukong
-2. Run the training script: `python DQN_wukong_training_gpu.py`
-3. The AI will start learning through game interaction
+Before training, you need to calibrate the blood bar positions and HSV color ranges for your screen resolution. Edit `config.py`:
 
-## History
+- `GAME_REGION`: your game window resolution
+- `BLOOD_REGION`: blood bar pixel coordinates
+- `HSV_RANGES`: blood bar color ranges
 
-This project was originally developed for Sekiro: Shadows Die Twice and has been adapted for Black Myth: Wukong. The original Sekiro version is available at [sekiro_tensorflow](https://github.com/analoganddigital/sekiro_tensorflow).
+### 3. Collect demo data (for pathfinding)
+
+Launch the game and play through the path to Tiger Vanguard while recording:
+
+```bash
+python -m training.data_collector --mode pathfinding --episodes 5
+```
+
+### 4. Train behavior cloning (pathfinding)
+
+```bash
+python -m pathfinding.behavior_clone --data-dir pathfinding_data
+```
+
+### 5. Train PPO (combat)
+
+```bash
+python -m training.train_combat train
+```
+
+### 6. Evaluate
+
+```bash
+python -m training.train_combat eval --model checkpoints/best_model.pt
+```
+
+## Technical Highlights
+
+| Feature | Old (DQN) | New (PPO) |
+|---------|-----------|-----------|
+| Algorithm | DQN (TF1, buggy) | PPO (PyTorch, correct) |
+| State | Single grayscale frame | 4-frame stack + blood values |
+| Encoder | 2-conv CNN | ResNet18 (ImageNet pretrained) |
+| Blood detection | Grayscale pixel counting | HSV color space segmentation |
+| Screen capture | win32gui (~30fps) | dxcam (~120fps) |
+| Action input | SendInput | pydirectinput (DirectX compatible) |
+| Reward | Hardcoded 6-level discrete | Continuous + normalized |
+| Pathfinding | Key replay (open-loop) | Behavior cloning + RL (closed-loop) |
+| Replay buffer | 2000 (too small) | 100,000 with prioritized sampling |
+
+## Action Space
+
+| ID | Action | Keys |
+|----|--------|------|
+| 0 | Idle | - |
+| 1 | Attack | LMB |
+| 2 | Heavy Attack | LMB x4 |
+| 3 | Dodge | Space |
+| 4 | Move Forward | W |
+| 5 | Move Right | D |
+| 6 | Move Left | A |
+| 7 | Dodge + Attack | Space + LMB |
+| 8 | Lock On | V |
+| 9 | Heal (Gourd) | R |
 
 ## License
 
-Reference: https://github.com/Sentdex/pygta5/blob/master/LICENSE
+MIT (original project by analogandigital, rewritten by Gravo)

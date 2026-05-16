@@ -15,6 +15,7 @@
 *.pth
 *.h5
 *.hdf5
+checkpoints/
 model/
 model_gpu/
 
@@ -25,6 +26,7 @@ model_gpu/
 
 # Training logs and run data
 runs/
+logs/
 logs_gpu/
 logs_images/
 utils/logs/
@@ -33,10 +35,12 @@ utils/screenshots/
 # Video data
 data_video/
 input/
+pathfinding_data/
 
 # IDE
 .idea/
 *.iml
+.vscode/
 
 # Python cache
 __pycache__/
@@ -45,6 +49,7 @@ __pycache__/
 
 # Reference source
 ref_src/
+old/
 
 # OS files
 .DESKTOP-18AO55Q
