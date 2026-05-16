@@ -10,11 +10,14 @@ import os
 GAME_WINDOW_TITLE = "黑神话：悟空"  # 游戏窗口标题（用于定位）
 
 # 游戏窗口区域（全屏时通常等于屏幕分辨率，需根据实际调整）
+# 游戏窗口区域（自动检测或手动设置）
+# 窗口化模式示例: left=249, top=90, width=1038, height=614
+# 全屏模式: left=0, top=0, width=1920, height=1080
 GAME_REGION = {
-    "top": 0,
-    "left": 0,
-    "width": 1920,
-    "height": 1080,
+    "top": 90,
+    "left": 249,
+    "width": 1038,
+    "height": 614,
 }
 
 # 血量检测区域（相对于游戏窗口左上角的坐标）

@@ -130,6 +130,21 @@ class ActionExecutor:
         return mask
 
 
+    def release_all(self):
+        """释放所有当前按下的键（安全清理，异常中断后调用）"""
+        all_keys = ["w", "a", "s", "d", "space", "j", "k", "v", "r", "shift"]
+        for key in all_keys:
+            try:
+                if key == "j":
+                    self._pydi.mouseUp(button='left')
+                elif key == "k":
+                    self._pydi.mouseUp(button='right')
+                else:
+                    self._pydi.keyUp(key)
+            except Exception:
+                pass
+
+
 # 全局单例
 _executor_instance = None
 
