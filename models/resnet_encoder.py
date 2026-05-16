@@ -34,7 +34,6 @@ class ResNetEncoder(nn.Module):
         self.resnet = resnet18(weights=weights)
         
         # 修改第一层卷积以接受多帧堆叠输入
-        # 原始: Conv2d(3, 64, kernel_size=7, stride=2, padding=3)
         original_conv = self.resnet.conv1
         self.resnet.conv1 = nn.Conv2d(
             self.in_channels, 64,
@@ -44,7 +43,6 @@ class ResNetEncoder(nn.Module):
         # 如果使用预训练权重，将原始3通道权重复制到新通道
         if pretrained and self.in_channels > 3:
             with torch.no_grad():
-                # 将RGB权重重复到所有帧
                 repeat_factor = self.in_channels // 3
                 self.resnet.conv1.weight[:, :, :, :] = original_conv.weight.repeat(
                     1, repeat_factor, 1, 1
@@ -65,27 +63,16 @@ class ResNetEncoder(nn.Module):
             self._freeze_encoder()
     
     def _freeze_encoder(self):
-        """冻结ResNet所有参数"""
         for param in self.resnet.parameters():
             param.requires_grad = False
-        print("[ResNetEncoder] 编码器参数已冻结")
+        print("[ResNetEncoder] Encoder parameters frozen")
     
     def unfreeze(self):
-        """解冻编码器，允许微调"""
         for param in self.resnet.parameters():
             param.requires_grad = True
-        print("[ResNetEncoder] 编码器参数已解冻")
+        print("[ResNetEncoder] Encoder parameters unfrozen")
     
     def forward(self, x):
-        """
-        前向传播
-        
-        Args:
-            x: (B, in_channels, 224, 224) 归一化图像帧
-        
-        Returns:
-            (B, latent_dim) 视觉特征
-        """
         features = self.resnet(x)
         return self.projection(features)
 
@@ -93,7 +80,8 @@ class ResNetEncoder(nn.Module):
 class CNNEncoder(nn.Module):
     """
     轻量级CNN编码器（资源受限时的备选方案）
-    4层卷积 + 2层全连接
+    4层卷积 + AdaptiveAvgPool + 全连接
+    不依赖硬编码空间维度，任意输入尺寸均可工作
     """
     
     def __init__(self, latent_dim=256, in_channels=12):
@@ -101,37 +89,39 @@ class CNNEncoder(nn.Module):
         self.latent_dim = latent_dim
         
         self.conv = nn.Sequential(
-            # 224x224 -> 112x112
+            # 224x224 -> 56x56
             nn.Conv2d(in_channels, 32, 8, stride=4, padding=2),
             nn.ReLU(),
             nn.BatchNorm2d(32),
-            # 112x112 -> 56x56
+            # 56x56 -> 28x28
             nn.Conv2d(32, 64, 4, stride=2, padding=1),
             nn.ReLU(),
             nn.BatchNorm2d(64),
-            # 56x56 -> 28x28
+            # 28x28 -> 14x14
             nn.Conv2d(64, 128, 3, stride=2, padding=1),
             nn.ReLU(),
             nn.BatchNorm2d(128),
-            # 28x28 -> 14x14
+            # 14x14 -> 7x7
             nn.Conv2d(128, 256, 3, stride=2, padding=1),
             nn.ReLU(),
             nn.BatchNorm2d(256),
         )
         
-        # 计算全连接输入维度
-        self._fc_input = 256 * 14 * 14
+        # 自适应池化：将任意空间维度压缩到1x1，避免硬编码
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((1, 1))
         
         self.fc = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(self._fc_input, 512),
+            nn.Linear(256, 512),
             nn.ReLU(),
             nn.Linear(512, latent_dim),
             nn.ReLU(),
         )
     
     def forward(self, x):
-        return self.fc(self.conv(x))
+        x = self.conv(x)
+        x = self.adaptive_pool(x)  # (B, 256, 1, 1)
+        return self.fc(x)
 
 
 def create_encoder(encoder_type=None, **kwargs):
