@@ -16,8 +16,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import PPO, TRAIN, NUM_ACTIONS
 from env.wukong_env import WukongEnv
 from models.ppo_agent import PPOAgent
-from utils_new.replay_buffer import RolloutBuffer
-from utils_new.logger import TrainingLogger
+from utils.replay_buffer import RolloutBuffer
+from utils.logger import TrainingLogger
 
 
 def train(args):

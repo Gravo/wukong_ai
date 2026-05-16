@@ -32,6 +32,9 @@ logs_images/
 utils/logs/
 utils/screenshots/
 
+# Legacy (renamed to utils/)
+utils_new/
+
 # Video data
 data_video/
 input/

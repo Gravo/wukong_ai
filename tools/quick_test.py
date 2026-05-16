@@ -89,7 +89,7 @@ def main():
     
     # --- 训练循环 ---
     print("\n[6/6] 训练循环")
-    from utils_new.replay_buffer import RolloutBuffer
+    from utils.replay_buffer import RolloutBuffer
     buf = RolloutBuffer(rollout_length=32)
     
     t0 = time.time()
