@@ -219,6 +219,9 @@ class PPOAgent:
         old_log_probs = torch.FloatTensor(rollout_buffer["log_probs"]).to(self.device)
         returns = torch.FloatTensor(rollout_buffer["returns"]).to(self.device)
         advantages = torch.FloatTensor(rollout_buffer["advantages"]).to(self.device)
+
+        # Free the original buffer data from GPU after copying to tensors
+        # (rollout_buffer is a dict from compute_returns_and_advantages)
         
         # 优势归一化
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
@@ -282,6 +285,10 @@ class PPOAgent:
                     config["max_grad_norm"],
                 )
                 self.optimizer.step()
+                
+                # Free minibatch tensors
+                del mb_frames, mb_blood, mb_actions, mb_old_log_probs
+                del mb_returns, mb_advantages
                 
                 total_policy_loss += policy_loss.item()
                 total_value_loss += value_loss.item()

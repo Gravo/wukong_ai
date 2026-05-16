@@ -111,7 +111,7 @@ def train_bc(args):
         dataset,
         batch_size=BC["batch_size"],
         shuffle=True,
-        num_workers=2,
+        num_workers=0,  # Windows compatibility: 0 avoids multiprocessing issues
         pin_memory=True,
     )
     

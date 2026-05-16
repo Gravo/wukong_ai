@@ -23,9 +23,12 @@ wukong_ai/
 │   └── data_collector.py       # 人类Demo数据采集
 ├── pathfinding/
 │   └── behavior_clone.py       # 行为克隆（寻路阶段）
-├── utils_new/
+├── utils/
 │   ├── replay_buffer.py        # Rollout缓冲 + 优先经验回放
 │   └── logger.py               # TensorBoard + 文件日志
+├── tools/
+│   ├── quick_test.py           # 系统快速验证
+│   └── calibrate_blood.py      # 血量检测校准
 └── old/                        # 旧版代码归档（DQN/PPO buggy versions）
 ```
 
@@ -37,13 +40,24 @@ wukong_ai/
 pip install -r requirements.txt
 ```
 
-### 2. Calibrate blood detection
+### 2. Verify system
 
-Before training, you need to calibrate the blood bar positions and HSV color ranges for your screen resolution. Edit `config.py`:
+```bash
+python tools/quick_test.py
+```
 
-- `GAME_REGION`: your game window resolution
-- `BLOOD_REGION`: blood bar pixel coordinates
-- `HSV_RANGES`: blood bar color ranges
+All 13 tests should pass.
+
+### 3. Calibrate blood detection
+
+Before training, calibrate blood bar detection for your screen:
+
+```bash
+python tools/calibrate_blood.py capture   # Capture a game screenshot
+python tools/calibrate_blood.py tune      # Interactive HSV adjustment
+```
+
+Or edit `config.py` directly for `BLOOD_REGION` and `HSV_RANGES`.
 
 ### 3. Collect demo data (for pathfinding)
 
@@ -103,3 +117,7 @@ python -m training.train_combat eval --model checkpoints/best_model.pt
 ## License
 
 MIT (original project by analogandigital, rewritten by Gravo)
+
+## Windows Quick Launch
+
+Double-click `run.bat` or run it from cmd for a menu-driven interface to all tools.

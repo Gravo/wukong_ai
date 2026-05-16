@@ -20,8 +20,25 @@ from utils.replay_buffer import RolloutBuffer
 from utils.logger import TrainingLogger
 
 
+def set_seed(seed):
+    """设置随机种子以确保可复现性"""
+    import random
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
 def train(args):
     """主训练循环"""
+    
+    # 初始化
+    set_seed(TRAIN["seed"])
+    
+    # 确保输出目录存在
+    os.makedirs(TRAIN["save_dir"], exist_ok=True)
+    os.makedirs(TRAIN["log_dir"], exist_ok=True)
     
     # 初始化环境
     env = WukongEnv(capture_backend=args.capture_backend)
