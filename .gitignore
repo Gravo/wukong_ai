@@ -1,0 +1,62 @@
+# Large media files
+*.mp4
+*.avi
+*.mkv
+*.gif
+
+# Images (screenshots, training data)
+*.png
+*.jpg
+*.jpeg
+*.bmp
+
+# Model weights and checkpoints
+*.pt
+*.pth
+*.h5
+*.hdf5
+model/
+model_gpu/
+
+# Packages
+*.whl
+*.zip
+*.tar.gz
+
+# Training logs and run data
+runs/
+logs_gpu/
+logs_images/
+utils/logs/
+utils/screenshots/
+
+# Video data
+data_video/
+input/
+
+# IDE
+.idea/
+*.iml
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Reference source
+ref_src/
+
+# OS files
+.DESKTOP-18AO55Q
+Thumbs.db
+Desktop.ini
+
+# Keys data (may contain sensitive data)
+recorded_keys*.txt
+opt_recorded_keys.txt
+
+# Duplicate/copy files (Chinese named copies)
+*副本*
+
+# Data files
+data_video_utils.py
