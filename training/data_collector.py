@@ -74,7 +74,8 @@ class DataCollector:
 
             if key == keyboard.Key.f1:
                 self._recording = False
-                return False
+                # Do NOT return False - it kills the listener permanently
+                # collect() loop handles _recording flag; test_keyboard() is one-shot
 
             # 保留最近50条
             if len(self._key_log) > 50:
