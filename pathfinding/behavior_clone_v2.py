@@ -8,6 +8,7 @@ behavior_clone_v2.py - 行为克隆模型 v2（极低内存版）
 import os
 import sys
 import argparse
+import gc
 import numpy as np
 import glob
 
@@ -176,6 +177,11 @@ def train_bc(args):
             f"acc={acc:.2%} mouse_mae={avg_mmae:.4f}",
             flush=True,
         )
+
+        # Memory cleanup after each epoch
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
         if acc > best_acc:
             best_acc = acc
