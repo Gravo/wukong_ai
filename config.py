@@ -167,7 +167,7 @@ TRAIN = {
 BC = {
     "lr": 1e-3,
     "epochs": 50,
-    "batch_size": 64,
+    "batch_size": 16,
     "data_dir": "pathfinding_data",  # 录制的demo数据目录
     "augment": True,                  # 数据增强
 }
