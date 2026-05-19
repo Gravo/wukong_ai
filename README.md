@@ -32,33 +32,65 @@ wukong_ai/
         └── stacked_data.npz    # 预处理后的训练数据
 ```
 
-## 当前状态（2026-05-17）
+## 当前状态（2026-05-19）
+
+### 问题诊断
+
+**核心问题**：模型收敛但未学到有效动作
+- 行为克隆准确率达到 74%，但推理时只会往前走
+- 鼠标输出几乎恒定，视角控制失效
+- 模型选择了"最安全"的策略：idle 或 forward
+
+**根因**：
+1. 数据分布失衡：idle 33.4% + forward 54.2% = 87.6%
+2. Distribution Shift：BC 只学 state→action，不理解后果
+3. 鼠标稀疏性：大部分帧鼠标不动，MSE 损失被淹没
+4. 损失函数不均衡：分类损失 vs 回归损失量级不同
+
+### 改进方案
+
+**已完成**：
+- ✅ 创建 `behavior_clone_v3.py`：数据过滤 + LR 调度 + 鼠标损失加权
+- ✅ 提取共享模型定义到 `models/bc_model.py`
+- ✅ 修复内存泄漏问题（gc.collect + cuda.empty_cache）
+- ✅ 添加详细分析文档 `docs/ANALYSIS.md`
+
+**待执行**：
+- 在有游戏环境的机器上运行 v3 训练
+- 推理测试验证效果
+- 如果效果不够，实施 DAgger 在线学习
 
 ### 训练进度
-- **最佳模型**: `checkpoints/bc_best.pt`（43.5MB，epoch 23保存）
-- **最佳准确率**: **74.02%**（epoch 23/50）
-- **训练状态**: epoch 24时被SIGKILL中断（内存累积导致OOM）
-- **鼠标输出**: ✅ 模型输出dx/dy，需真实游戏画面测试是否有意义
-
-### 数据情况
-- 12个h5文件，共8249训练样本
-- 动作分布：idle 33.4% / forward 54.2% / right 7.5% / left 4.8% / dodge 0.0%
-- 鼠标统计：dx mean=-0.006 std=0.244，dy mean=0.001 std=0.121
-
-### 已知问题
-1. 训练到~24 epoch因内存累积被kill（需在每个epoch后加`torch.cuda.empty_cache()`）
-2. 数据forward偏重（54%），模型倾向一直往前走
-3. 鼠标输出在随机噪声输入下几乎恒定，需真实游戏画面验证
-4. `config.py`的`batch_size`临时改为16，训练完成后需改回64
-
-### 下一步
-1. 修复训练脚本内存泄漏 → 重新训练完整50 epochs
-2. 推理测试（需要打开游戏）
-3. 清理乱走数据或录更多转角数据平衡分布
+- **v2 模型**: `checkpoints/bc_best.pt`（74.02% 准确率，但效果不佳）
+- **v3 模型**: 待训练（使用数据过滤 + LR 调度）
 
 ---
 
-## 四步流程（完整链路）
+## 快速开始（v3 改进版）
+
+### 1. 分析数据分布
+```bash
+python pathfinding/behavior_clone_v3.py --analyze-only
+```
+
+### 2. 训练改进模型
+```bash
+# 默认配置（idle 保留 10%，鼠标权重 2.0x）
+python pathfinding/behavior_clone_v3.py
+
+# 自定义配置
+python pathfinding/behavior_clone_v3.py --epochs 100 --idle-ratio 0.1 --mouse-weight 2.0
+```
+
+### 3. 推理测试
+```bash
+# 打开游戏，进入虎先锋战斗
+python pathfinding/inference_v2.py --duration 120 --fps 10
+```
+
+---
+
+## 完整流程（四步链路）
 
 ### 1. 采集数据
 
@@ -211,6 +243,14 @@ C:\Python\python.exe pathfinding/inference_v2.py --duration 60 --fps 10
 | 7 | Dodge + Attack | Space + J |
 | 8 | Lock On | V |
 | 9 | Heal (Gourd) | R |
+
+---
+
+## 详细分析
+
+关于当前方案的问题诊断、替代方案研究（OpenVLA、DAgger、GAIL、Diffusion Policy 等）、以及推荐实施路径，请参考：
+
+**[docs/ANALYSIS.md](docs/ANALYSIS.md)**
 
 ---
 
