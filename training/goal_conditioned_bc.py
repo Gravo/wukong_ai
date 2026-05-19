@@ -1,43 +1,42 @@
 """
-goal_conditioned_bc.py - Goal-Conditioned Behavior Cloning 训练脚本
-用于训练带「目标变量」的行为克隆模型（解决「模型不知道目标」的根本问题）
+goal_conditioned_bc.py - Goal-Conditioned Behavior Cloning 训练脚本 v2.0
+简化设计：单帧输入 + Goal Embedding（先确保能跑通）
 
 使用方法：
 
   cd D:\projects\wukong_ai
   
   # 1. 用 v3.0 脚本录制带 goal 标注的数据
-  C:\Python\python.exe -u training\data_collector_v3.py ^
+  C:\Python\python.exe -u training/data_collector_v3.py ^
     --duration 600 --fps 15 ^
     --goals-file goals.txt
   
-  # 2. 训练 Goal-Conditioned BC 模型
+  # 2. 训练 Goal-Conditioned BC 模型（简化版，单帧输入）
   C:\Python\python.exe -u training\goal_conditioned_bc.py ^
     --data-dir pathfinding_data ^
     --epochs 50 ^
     --batch-size 32 ^
-    --lr 0.001 ^
-    --use-lstm
+    --lr 0.001
   
-  # 3. 推理测试
+  # 3. 推理测试（待实现）
   C:\Python\python.exe -u training\inference_goal.py ^
     --model checkpoints\goal_bc_epoch_050.pt ^
     --duration 60 ^
     --fps 10
 
-模型架构：
-  Input: 画面帧 (224x224x3) + goal_id (int)
+模型架构（简化版）：
+  Input: 单帧画面 (3, 224, 224) + goal_id (int)
     ↓
-  ResNet18 (预训练) → 256维特征
+  ResNet18 (预训练) → 512维特征
     ↓
   Goal Embedding (可学习) → 64维
     ↓
-  Concatenate [256 + 64] → 320维
+  Concatenate [512 + 64] → 576维
     ↓
-  [Optional] LSTM (2层) → 512维 (时序建模）
+  Fusion Layer: Linear(576 → 512) + ReLU + Dropout
     ↓
-  动作头: Linear(512→10) + Softmax
-  鼠标头: Linear(512→2) + SmoothL1Loss
+  动作头: Linear(512 → 10) + Softmax
+  鼠标头: Linear(512 → 2) + SmoothL1Loss
 """
 
 import os
@@ -69,18 +68,15 @@ GOAL_EMBED_DIM = 64
 # ---- Dataset ----
 
 class GoalConditionedDataset(Dataset):
-    """加载带 goal_ids 的 h5 数据"""
+    """加载带 goal_ids 的 h5 数据（简化版：单帧输入）"""
 
-    def __init__(self, data_dir, seq_len=1, use_lstm=False):
+    def __init__(self, data_dir):
         """
         Args:
             data_dir: h5 文件目录
-            seq_len: 序列长度（LSTM时使用 >1）
-            use_lstm: 是否使用 LSTM（需要 seq_len > 1）
         """
-        self.seq_len = seq_len if use_lstm else 1
-        self.use_lstm = use_lstm
         self.samples = []
+        self.goal_names = []  # 可选：保存 goal 名称
 
         print(f"[Data] Loading h5 files from {data_dir}...", flush=True)
 
@@ -103,39 +99,24 @@ class GoalConditionedDataset(Dataset):
                         print(f"[Data] ⚠️  {h5_file} has no goal_ids, using 0", flush=True)
                         goal_ids = np.zeros(len(frames), dtype=np.int8)
 
-                    num_goals = f.attrs.get('num_goals', 1)
-
-                    # 预处理：转 RGB → BGR (cv2 format to PyTorch format)
+                    # 预处理：转 (N, 224, 224, 3) → (N, 3, 224, 224)
                     # PyTorch expects (N, C, H, W)
                     frames = frames.transpose(0, 3, 1, 2)  # (N, 3, 224, 224)
                     frames = frames.astype(np.float32) / 255.0
-                    frames = (frames - np.array([0.485, 0.456, 0.406]).reshape(1, 3, 1, 1)) / np.array([0.229, 0.224, 0.225]).reshape(1, 3, 1, 1)
 
-                    # 构建样本
-                    if self.use_lstm and len(frames) >= self.seq_len:
-                        # LSTM: 每个样本是一个序列
-                        for i in range(len(frames) - self.seq_len + 1):
-                            seq_frames = frames[i:i + self.seq_len]  # (T, 3, 224, 224)
-                            seq_goal_ids = goal_ids[i:i + self.seq_len]  # (T,)
-                            action = actions[i + self.seq_len - 1]  # 序列最后一帧的动作
-                            mouse = np.array([mouse_dx[i + self.seq_len - 1],
-                                              mouse_dy[i + self.seq_len - 1]], dtype=np.float32)
+                    # ImageNet 归一化（注意 dtype=float32）
+                    mean = np.array([0.485, 0.456, 0.406], dtype=np.float32).reshape(1, 3, 1, 1)
+                    std = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(1, 3, 1, 1)
+                    frames = (frames - mean) / std
 
-                            self.samples.append({
-                                'frames': seq_frames,
-                                'goal_ids': seq_goal_ids,
-                                'action': int(action),
-                                'mouse': mouse,
-                            })
-                    else:
-                        # 不使用 LSTM: 每个样本是单帧
-                        for i in range(len(frames)):
-                            self.samples.append({
-                                'frames': frames[i:i + 1],  # (1, 3, 224, 224)
-                                'goal_ids': np.array([goal_ids[i]]),  # (1,)
-                                'action': int(actions[i]),
-                                'mouse': np.array([mouse_dx[i], mouse_dy[i]], dtype=np.float32),
-                            })
+                    # 构建样本（单帧输入）
+                    for i in range(len(frames)):
+                        self.samples.append({
+                            'frames': frames[i],  # (3, 224, 224)
+                            'goal_id': int(goal_ids[i]),
+                            'action': int(actions[i]),
+                            'mouse': np.array([mouse_dx[i], mouse_dy[i]], dtype=np.float32),
+                        })
 
             except Exception as e:
                 print(f"[Data] ❌ Error loading {h5_file}: {e}", flush=True)
@@ -148,23 +129,23 @@ class GoalConditionedDataset(Dataset):
 
     def __getitem__(self, idx):
         sample = self.samples[idx]
-        frames = torch.from_numpy(sample['frames'])  # (T, 3, 224, 224)
-        goal_ids = torch.from_numpy(sample['goal_ids']).long()  # (T,)
-        action = torch.tensor(sample['action'], dtype=torch.long)
+        frames = torch.from_numpy(sample['frames'])  # (3, 224, 224)
+        goal_id = torch.tensor(sample['goal_id'], dtype=torch.long)  # scalar
+        action = torch.tensor(sample['action'], dtype=torch.long)  # scalar
         mouse = torch.from_numpy(sample['mouse'])  # (2,)
 
-        return frames, goal_ids, action, mouse
+        return frames.unsqueeze(0), goal_id, action, mouse
+        # frames: (1, 3, 224, 224)  # 添加 batch 维度
 
 
 # ---- Model ----
 
 class GoalConditionedBC(nn.Module):
-    """Goal-Conditioned Behavior Cloning 模型"""
+    """Goal-Conditioned Behavior Cloning 模型（简化版：单帧输入）"""
 
-    def __init__(self, num_goals, use_lstm=False, lstm_hidden=512, lstm_layers=2):
+    def __init__(self, num_goals):
         super().__init__()
         self.num_goals = num_goals
-        self.use_lstm = use_lstm
 
         # 视觉编码器（ResNet18）
         resnet = models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
@@ -176,18 +157,9 @@ class GoalConditionedBC(nn.Module):
 
         # 融合层
         fused_dim = self.visual_feat_dim + GOAL_EMBED_DIM  # 512 + 64 = 576
-        if use_lstm:
-            # LSTM 时序建模
-            self.lstm = nn.LSTM(fused_dim, lstm_hidden, num_layers=lstm_layers,
-                                batch_first=True, bidirectional=False)
-            self.fusion = nn.Linear(lstm_hidden, lstm_hidden)
-            self.action_head = nn.Linear(lstm_hidden, NUM_ACTIONS)
-            self.mouse_head = nn.Linear(lstm_hidden, 2)
-        else:
-            # 无 LSTM（单帧）
-            self.fusion = nn.Linear(fused_dim, 512)
-            self.action_head = nn.Linear(512, NUM_ACTIONS)
-            self.mouse_head = nn.Linear(512, 2)
+        self.fusion = nn.Linear(fused_dim, 512)
+        self.action_head = nn.Linear(512, NUM_ACTIONS)
+        self.mouse_head = nn.Linear(512, 2)
 
         self.dropout = nn.Dropout(0.5)
         self.relu = nn.ReLU()
@@ -195,37 +167,26 @@ class GoalConditionedBC(nn.Module):
     def forward(self, frames, goal_ids):
         """
         Args:
-            frames: (B, T, 3, 224, 224) 或 (B, 1, 3, 224, 224)
-            goal_ids: (B, T)
+            frames: (B, 3, 224, 224)  # 单帧，无序列维度
+            goal_ids: (B,)  # 每个样本一个 goal_id
         Returns:
             action_logits: (B, NUM_ACTIONS)
             mouse_pred: (B, 2)
         """
-        B, T = frames.shape[:2]
-
         # 视觉特征提取
-        frames_flat = frames.view(B * T, 3, 224, 224)
-        visual_feat = self.visual_encoder(frames_flat)  # (B*T, 512, 1, 1)
-        visual_feat = visual_feat.view(B * T, self.visual_feat_dim)  # (B*T, 512)
-        visual_feat = visual_feat.view(B, T, self.visual_feat_dim)  # (B, T, 512)
+        visual_feat = self.visual_encoder(frames)  # (B, 512, 1, 1)
+        visual_feat = visual_feat.view(visual_feat.size(0), -1)  # (B, 512)
 
         # Goal embedding
-        goal_emb = self.goal_embed(goal_ids)  # (B, T, 64)
+        goal_emb = self.goal_embed(goal_ids)  # (B, 64)
 
         # 融合
-        fused = torch.cat([visual_feat, goal_emb], dim=-1)  # (B, T, 576)
+        fused = torch.cat([visual_feat, goal_emb], dim=-1)  # (B, 576)
+        feat = self.relu(self.fusion(fused))  # (B, 512)
+        feat = self.dropout(feat)
 
-        if self.use_lstm:
-            # LSTM
-            lstm_out, (h_n, c_n) = self.lstm(fused)  # lstm_out: (B, T, lstm_hidden)
-            feat = h_n[-1]  # (B, lstm_hidden) 取最后一层
-        else:
-            # 无 LSTM：只取最后一帧
-            feat = self.relu(self.fusion(fused[:, -1, :]))  # (B, 512)
-            feat = self.dropout(feat)
-
-        action_logits = self.action_head(feat)
-        mouse_pred = self.mouse_head(feat)
+        action_logits = self.action_head(feat)  # (B, NUM_ACTIONS)
+        mouse_pred = self.mouse_head(feat)  # (B, 2)
 
         return action_logits, mouse_pred
 
@@ -235,38 +196,31 @@ class GoalConditionedBC(nn.Module):
 def train(args):
     """训练 Goal-Conditioned BC 模型"""
     print(f"\n{'=' * 60}", flush=True)
-    print(f"  Goal-Conditioned Behavior Cloning Training", flush=True)
+    print(f"  Goal-Conditioned Behavior Cloning Training (v2.0)", flush=True)
     print(f"  Data: {args.data_dir}", flush=True)
     print(f"  Epochs: {args.epochs}", flush=True)
     print(f"  Batch size: {args.batch_size}", flush=True)
     print(f"  Learning rate: {args.lr}", flush=True)
-    print(f"  Use LSTM: {args.use_lstm}", flush=True)
     print(f"  Device: {'CUDA' if torch.cuda.is_available() else 'CPU'}", flush=True)
     print(f"{'=' * 60}\n", flush=True)
 
     # 数据集
-    dataset = GoalConditionedDataset(
-        args.data_dir,
-        seq_len=args.seq_len if args.use_lstm else 1,
-        use_lstm=args.use_lstm
-    )
+    dataset = GoalConditionedDataset(args.data_dir)
 
     if len(dataset) == 0:
         print("[Train] ❌ No data loaded! Check data directory.", flush=True)
         return
 
-    # 估算 goal 数量
-    num_goals = 10  # 默认值，应该从数据集中读取
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=0)
+
+    # 估算 goal 数量（从数据中）
+    all_goal_ids = [dataset.samples[i]['goal_id'] for i in range(len(dataset))]
+    num_goals = max(all_goal_ids) + 1
+    print(f"[Train] Detected {num_goals} goals", flush=True)
 
     # 模型
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = GoalConditionedBC(
-        num_goals=num_goals,
-        use_lstm=args.use_lstm,
-        lstm_hidden=args.lstm_hidden,
-        lstm_layers=args.lstm_layers
-    ).to(device)
+    model = GoalConditionedBC(num_goals=num_goals).to(device)
 
     # 优化器
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
@@ -293,6 +247,10 @@ def train(args):
             goal_ids = goal_ids.to(device)
             actions = actions.to(device)
             mouse = mouse.to(device)
+
+            # ⚠️ 重要：去掉 frames 的第1维度（DataLoader 添加的 batch 维度 + __getitem__ 添加的序列维度）
+            # frames: (B, 1, 3, 224, 224) → (B, 3, 224, 224)
+            frames = frames.squeeze(1)
 
             optimizer.zero_grad()
 
@@ -341,17 +299,13 @@ def train(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Goal-Conditioned Behavior Cloning Training")
+    parser = argparse.ArgumentParser(description="Goal-Conditioned Behavior Cloning Training (v2.0)")
 
     parser.add_argument("--data-dir", type=str, default="pathfinding_data",
                         help="Directory containing h5 files")
     parser.add_argument("--epochs", type=int, default=50, help="Number of epochs")
     parser.add_argument("--batch-size", type=int, default=32, help="Batch size")
     parser.add_argument("--lr", type=float, default=0.001, help="Learning rate")
-    parser.add_argument("--use-lstm", action="store_true", help="Use LSTM for temporal modeling")
-    parser.add_argument("--seq-len", type=int, default=10, help="Sequence length for LSTM")
-    parser.add_argument("--lstm-hidden", type=int, default=512, help="LSTM hidden dimension")
-    parser.add_argument("--lstm-layers", type=int, default=2, help="Number of LSTM layers")
 
     args = parser.parse_args()
 
