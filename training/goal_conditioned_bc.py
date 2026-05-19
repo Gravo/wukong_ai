@@ -109,6 +109,10 @@ class GoalConditionedDataset(Dataset):
                     std = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(1, 3, 1, 1)
                     frames = (frames - mean) / std
 
+                    # 归一化鼠标数据到 [-1, 1]（修复 loss spike）
+                    mouse_dx = mouse_dx.astype(np.float32) / 224.0
+                    mouse_dy = mouse_dy.astype(np.float32) / 224.0
+
                     # 构建样本（单帧输入）
                     for i in range(len(frames)):
                         self.samples.append({
@@ -262,6 +266,10 @@ def train(args):
             loss = action_loss + 2.0 * mouse_loss  # 鼠标损失权重 2.0x
 
             loss.backward()
+            
+            # 梯度裁剪（防止梯度爆炸）
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            
             optimizer.step()
 
             # 统计
