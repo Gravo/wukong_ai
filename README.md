@@ -248,9 +248,17 @@ C:\Python\python.exe pathfinding/inference_v2.py --duration 60 --fps 10
 
 ## 详细分析
 
+### 问题诊断与改进方案
 关于当前方案的问题诊断、替代方案研究（OpenVLA、DAgger、GAIL、Diffusion Policy 等）、以及推荐实施路径，请参考：
 
 **[docs/ANALYSIS.md](docs/ANALYSIS.md)**
+
+### 寻路问题定义
+关于黑神话悟空中如何定义寻路问题、不同视角的讨论（工程、计算机视觉、强化学习、机器人学、游戏 AI）、以及混合方案的设计，请参考：
+
+**[docs/PATHFINDING_PROBLEM.md](docs/PATHFINDING_PROBLEM.md)**
+
+**[docs/DEBATE_PATHFINDING.md](docs/DEBATE_PATHFINDING.md)**
 
 ---
 
