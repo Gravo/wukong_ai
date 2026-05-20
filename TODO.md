@@ -374,5 +374,121 @@
 
 ---
 
-**最后更新**: 2026-05-19 23:45  
+**最后更新**: 2026-05-20 12:15  
 **下次更新**: 完成任務1（Goal-Conditioned BC）后
+
+---
+
+## 🔬 研究前沿：果蝇大脑模拟与"打印大脑"研究
+
+**追加时间**: 2026-05-20  
+**来源**: QClaw 好奇心驱动调研
+
+### 研究问题
+1. **果蝇搓头行为（head-grooming）**：黑腹果蝇（Drosophila melanogaster）的搓头是神经科学中的经典刻板行为模型，由特定神经回路控制。是否可以用AI"打印"出这个行为的神经网络？
+2. **LLM能否帮助构建/模拟小型大脑？**
+
+### 已知关键研究项目
+
+#### 1. Janelia FlyEM — 果蝇全脑连接组
+- **机构**: Howard Hughes Janelia Research Campus
+- **内容**: 用电子显微镜重建果蝇神经系统的完整连接组（connectome）
+- **规模**: ~140,000 神经元，~100万个突触
+- **状态**: 已有完整成年果蝇脑连接组数据
+- **网站**: https://www.janelia.org/project-team/flyem
+- **相关**: Fruit Fly Brain (FFB) dataset — 已公开
+
+#### 2. Google Brain — Multi-Possion Project（模拟果蝇运动回路）
+- **内容**: 用生物物理模型模拟果蝇部分脑区的运动控制回路
+- **目标**: 研究"运动行为"（行走的神经基础）— 与悟空AI的"动作决策"高度相关
+- **意义**: 证明了可以用ML/计算神经科学方法"重建"和"模拟"小型神经系统
+
+#### 3. Neuromorphic 类脑计算
+- **Intel Loihi**: 神经形态芯片，运行稀疏脉冲神经网络（SNN）
+- **IBM TrueNorth**: 低功耗神经形态芯片
+- **Stanford Braindrop**: 模拟神经动力学系统
+- **相关论文**: "Brainstorm: A neuromorphic architecture for motor control" — 已有初步成果
+
+#### 4. 连接组合成 + LLM
+- **Hugging Face + NeuroScience**: 有团队尝试用语言模型预测蛋白质结构（AlphaFold），但对神经回路预测的研究较少
+- **有趣方向**: 能否用LLM的"涌现能力"从连接组数据中发现新的神经回路模式？
+
+### "打印"小型大脑的可能性评估
+
+| 方法 | 可行性 | 当前状态 |
+|------|--------|---------|
+| **电子显微镜 → 连接组** | ✅ 已实现 | Janelia已有完整果蝇连接组 |
+| **连接组 → 计算模型** | ⚠️ 部分实现 | 只能模拟局部回路，完整脑模拟仍困难 |
+| **计算模型 → 可运行AI** | ❌ 基本不可行 | 神经元级别的生物物理模型无法直接转化为"智能行为" |
+| **LLM辅助发现回路规律** | 🔍 值得探索 | LLM可能从连接组数据中发现模式（需进一步调研） |
+| **用游戏AI方法做神经回路模拟** | 🔥 高度相关 | 悟空AI本质上是在模拟"感知→决策→动作"，与神经回路同构 |
+
+### 关键洞察
+
+> **模拟"大脑"和模拟"智能行为"是两件不同的事。**
+>
+> 果蝇有~140,000个神经元，我们已经有完整的连接组。
+> 但"有了连接图"≠"有了智能"。
+> 从连接到行为，需要：
+> 1. 神经动力学模型（每个神经元如何随时间变化）
+> 2. 神经调质模型（多巴胺、血清素等神经调质如何影响行为）
+> 3. 环境交互模型（感知→行动闭环）
+>
+> **这和悟空AI面临的问题完全同构**：
+> - 视觉感知 → 神经编码（ResNet编码器）
+> - 决策 → 神经回路计算（Policy/BC模型）
+> - 动作执行 → 运动输出（手/鼠标）
+>
+> 所以：研究果蝇大脑可以给我们启发，但"打印大脑"目前还做不到。
+
+### 推荐调研方向
+
+```
+TODO 调研项（如果想深入研究）：
+
+□ Janelia Hemibrain 连接组数据 → 如何下载，如何分析
+  URL: https://www.janelia.org/project-team/flyem/research
+
+□ Fruit Fly Motor Circuit simulation（Google Brain相关论文）
+  关键词: "Drosophila motor control simulation neural network"
+
+□ C. elegans connectome（更小！: 302个神经元，已完整mapping）
+  是否有AI可以直接从连接组生成行为模拟？
+
+□ "Neuromorphic computing for game AI" — 是否有现成研究？
+
+□ AlphaFold蛋白质折叠 → 能否迁移到"神经回路结构预测"？
+```
+
+### 与悟空AI的关联
+
+**果蝇搓头 = 完美的"单行为AI"参考基准**：
+
+```
+搓头行为的神经回路（简化版）：
+  感觉输入（触角脏了）→ 特定神经元激活 → 
+  搓头运动程序 → 执行刻板动作序列
+
+悟空AI的行为回路（当前）：
+  游戏画面（感觉输入）→ ResNet编码器 → 
+  BC/PPO/WorldModel（决策）→ 执行动作
+
+两者的架构是同构的！
+→ 果蝇研究可以给我们启发：
+  1. 如何检测"当前状态"（感觉编码）
+  2. 如何触发"行为切换"（决策机制）
+  3. 如何执行"刻板动作序列"（动作程序）
+```
+
+**如果想实验**：
+- 可以找C. elegans（秀丽隐杆线虫）的完整连接组（302个神经元，全公开）
+- 用PyTorch搭一个简化神经网络，看能否复现其趋化行为（chemotaxis）
+- 这是目前最接近"打印大脑就能工作"的例子
+
+### 参考文献
+
+1. **Janelia FlyEM**: https://www.janelia.org/project-team/flyem
+2. **Hemibrain v1.0** (FlyEM connectome): https://doi.org/10.1101/2020.01.21.914agine
+3. **C. elegans connectome**: https://wormwiring.org/ (完整302神经元连接组)
+4. **Google Multi-Possion** (模拟果蝇运动回路): 相关论文需进一步搜索
+5. **Neuromorphic Loihi**: https://www.intel.com/content/www/us/en/research/neuromorphic-computing.html
