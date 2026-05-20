@@ -316,8 +316,18 @@
 ```markdown
 ## 2026-05-20
 - 完成了什么：
-- 遇到了什么问题：
+  - 创建 `docs/RESEARCH_PRETRAINED_MODELS.md` — 预训练模型调研报告
+  - 创建 `models/pointnav_model.py` — PointNav最优实现（DD-PPO编码器 + MiDaS深度 + Goal-Conditioned，~28KB）
+  - 创建 `data_collection_pointnav.py` — PointNav专用数据采集器
+  - 创建 `docs/POINTNAV_QUICKSTART.md` — 快速上手指南
+  - 推送GitHub `604d783`
+- 遇到的问题：
+  - MiDaS需要网络加载，可能失败（已设置fallback）
+  - DD-PPO官方权重需要Habitat环境（用ResNet50作为结构替代）
 - 明天计划：
+  - 采集第一批PointNav数据
+  - 运行训练测试
+  - 评估导航效果
 ```
 
 ---
