@@ -66,26 +66,57 @@ wukong_ai/
 
 ---
 
-## 快速开始（v3 改进版）
+## 快速开始
 
-### 1. 分析数据分布
+### 方案 1：L2 辅助驾驶（推荐）
+
+**灵感来源**：自动驾驶 L2 级别的"人机共驾"模式
+
 ```bash
-python pathfinding/behavior_clone_v3.py --analyze-only
+# 1. 立即使用（规则方法，无需训练）
+python assist/quick_start.py
+
+# 2. 采集训练数据
+python assist/data_collector.py --mode dodge --duration 300
+
+# 3. 训练模型
+python assist/train_dodge.py --data "l2_data/dodge_data_*.h5"
+
+# 4. 使用训练好的模型
+python assist/quick_start.py --model checkpoints/auto_dodge_best.pt
 ```
 
-### 2. 训练改进模型
+**优势**：
+- 数据需求少（只需特定功能数据）
+- 训练时间短（数小时）
+- 模型轻量（适合 RTX 2060）
+- 可控性高（参数可调）
+- 用户体验好（辅助而非替代）
+
+详见：[docs/L2_ASSIST_GUIDE.md](docs/L2_ASSIST_GUIDE.md)
+
+---
+
+### 方案 2：行为克隆 v3（改进版）
+
 ```bash
-# 默认配置（idle 保留 10%，鼠标权重 2.0x）
+# 1. 分析数据分布
+python pathfinding/behavior_clone_v3.py --analyze-only
+
+# 2. 训练改进模型
 python pathfinding/behavior_clone_v3.py
 
-# 自定义配置
-python pathfinding/behavior_clone_v3.py --epochs 100 --idle-ratio 0.1 --mouse-weight 2.0
+# 3. 推理测试
+python pathfinding/inference_v2.py --duration 120 --fps 10
 ```
 
-### 3. 推理测试
+---
+
+### 方案 3：混合模式（BC + L2）
+
 ```bash
-# 打开游戏，进入虎先锋战斗
-python pathfinding/inference_v2.py --duration 120 --fps 10
+# 结合 BC 模型（寻路）和 L2 辅助（战斗）
+python assist/integration_example.py --bc-model checkpoints/bc_v3_best.pt
 ```
 
 ---
