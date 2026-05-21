@@ -314,20 +314,25 @@
 ## 📝 每日记录（建议每天更新）
 
 ```markdown
-## 2026-05-20
+## 2026-05-21
 - 完成了什么：
-  - 创建 `docs/RESEARCH_PRETRAINED_MODELS.md` — 预训练模型调研报告
-  - 创建 `models/pointnav_model.py` — PointNav最优实现（DD-PPO编码器 + MiDaS深度 + Goal-Conditioned，~28KB）
-  - 创建 `data_collection_pointnav.py` — PointNav专用数据采集器
-  - 创建 `docs/POINTNAV_QUICKSTART.md` — 快速上手指南
-  - 推送GitHub `604d783`
+  - 补充 `docs/RESEARCH_WORLD_MODEL.md` 三个附录：
+    * 附录A：陶哲轩"广度vs深度"思想详解（含Python实现）
+    * 附录B：JEPA技术细节（MATLAB伪代码、EMA实现、对比VAE）
+    * 附录C：世界模型训练脚本修复（完整可直接用的`models/world_model.py`，~22KB）
+  - 创建 `models/world_model.py`（完整实现）：
+    * 修复TrajectoryDataset返回格式
+    * 修复负样本损失（使用对比损失）
+    * 修复推理函数中的模型调用
+    * 补全所有参数解析
+  - 推送GitHub `ce55700`
 - 遇到的问题：
-  - MiDaS需要网络加载，可能失败（已设置fallback）
-  - DD-PPO官方权重需要Habitat环境（用ResNet50作为结构替代）
+  - 编辑工具对空白字符要求严格，改用文件末尾追加方式
+  - Git push被拒绝（远程有新提交），先用`git pull --rebase`解决
 - 明天计划：
-  - 采集第一批PointNav数据
-  - 运行训练测试
-  - 评估导航效果
+  - 采集第一批PointNav数据（存档点A→B轨迹）
+  - 运行`models/world_model.py --train`测试训练
+  - 对比BC v3 vs 世界模型（同一测试集）
 ```
 
 ---
