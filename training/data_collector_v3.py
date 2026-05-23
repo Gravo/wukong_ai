@@ -674,7 +674,7 @@ if __name__ == "__main__":
     if args.report:
         # TODO: 实现报告查看功能
         print(f"Report for {args.report}: (not implemented yet)", flush=True)
-        return
+        sys.exit(0)
 
     collector.collect(
         num_episodes=args.episodes,
