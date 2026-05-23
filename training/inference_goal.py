@@ -1,10 +1,13 @@
-﻿"""
-inference_goal.py - Real-time inference with trained Goal-Conditioned BC model
-Usage:
-    C:\Python\python.exe -u training\inference_goal.py --model checkpoints\goal_bc_epoch_015.pt --goal-id 0 --duration 300 --fps 10
 """
-import argparse, time, numpy as np, torch, h5py, os, sys
-from datetime import datetime
+inference_goal.py - Real-time inference with trained Goal-Conditioned BC model v2.0
+新增：鼠标 EMA 平滑（减少左右抖动）
+
+Usage:
+    C:\Python\python.exe -u training\inference_goal.py ^
+      --model checkpoints\goal_bc_epoch_030.pt ^
+      --goal-id 1 --duration 60 --fps 10
+"""
+import argparse, time, numpy as np, torch, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from goal_conditioned_bc import GoalConditionedBC
@@ -14,17 +17,24 @@ import pydirectinput as pdi
 
 ACTION_NAMES = ["idle","attack","heavy","dodge","forward","right","left","dodge_atk","lock","heal"]
 ACTION_KEYS = {
-    0: None,  # idle
-    1: "j",  # attack
-    2: "k",  # heavy
-    3: "space",  # dodge
-    4: "w",  # forward
-    5: "d",  # right
-    6: "a",  # left
-    7: "j",  # dodge_atk (combo)
-    8: "r",  # lock
-    9: "v",  # heal
+    0: None, 1: "j", 2: "k", 3: "space", 4: "w",
+    5: "d", 6: "a", 7: "j", 8: "r", 9: "v",
 }
+
+
+class EMASmoother:
+    """指数移动平均平滑器，减少鼠标输出抖动"""
+    def __init__(self, alpha=0.3):
+        self.alpha = alpha
+        self.value = None
+
+    def update(self, x):
+        if self.value is None:
+            self.value = x.copy()
+        else:
+            self.value = self.alpha * x + (1 - self.alpha) * self.value
+        return self.value.copy()
+
 
 def preprocess_frame(frame):
     """Preprocess frame to (1, 3, 224, 224)"""
@@ -34,18 +44,16 @@ def preprocess_frame(frame):
     mean = np.array([0.485, 0.456, 0.406], dtype=np.float32).reshape(1, 1, 3)
     std = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(1, 1, 3)
     frame = (frame - mean) / std
-    frame = frame.transpose(2, 0, 1)  # (224, 224, 3) -> (3, 224, 224)
-    return torch.from_numpy(frame).unsqueeze(0)  # (1, 3, 224, 224)
+    frame = frame.transpose(2, 0, 1)
+    return torch.from_numpy(frame).unsqueeze(0)
+
 
 def execute_action(action_id, mouse_dx, mouse_dy):
     """Execute predicted action"""
-    # Mouse movement
-    dx = int(mouse_dx * 50)  # scale factor
+    dx = int(mouse_dx * 50)
     dy = int(mouse_dy * 50)
     if abs(dx) > 1 or abs(dy) > 1:
         pdi.moveRel(dx, dy, relative=True)
-    
-    # Keyboard action
     key = ACTION_KEYS.get(action_id)
     if key and key != "space":
         pdi.keyDown(key)
@@ -54,66 +62,78 @@ def execute_action(action_id, mouse_dx, mouse_dy):
     elif key == "space":
         pdi.press(key)
 
+
 def main(args):
-    # Load model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = GoalConditionedBC(num_goals=1).to(device)
-    model.load_state_dict(torch.load(args.model, map_location=device))
+
+    # Auto-detect num_goals from checkpoint
+    checkpoint = torch.load(args.model, map_location='cpu')
+    num_goals = checkpoint['goal_embed.weight'].shape[0]
+    print(f"[Inference] Auto-detected num_goals={num_goals}", flush=True)
+
+    model = GoalConditionedBC(num_goals=num_goals).to(device)
+    model.load_state_dict(checkpoint)
     model.eval()
     print(f"[Inference] Model loaded: {args.model}", flush=True)
     print(f"[Inference] Device: {device}", flush=True)
     print(f"[Inference] Goal ID: {args.goal_id}", flush=True)
-    
+    print(f"[Inference] EMA alpha: {args.ema_alpha}", flush=True)
+
     # Setup camera
     camera = dxcam.create(output_color="BGR", region=(0, 0, 1920, 1080))
     camera.start(region=(0, 0, 1920, 1080), target_fps=args.fps)
     print(f"[Inference] Camera started, FPS={args.fps}", flush=True)
-    
+
     goal_id = torch.tensor([args.goal_id], dtype=torch.long).to(device)
-    
+    mouse_smoother = EMASmoother(alpha=args.ema_alpha)
+
     start_time = time.time()
     frame_count = 0
-    
+
     print(f"\n[Inference] Starting... Press Ctrl+C to stop\n", flush=True)
-    
+
     try:
         while (time.time() - start_time) < args.duration:
             frame = camera.get_latest_frame()
             if frame is None:
                 time.sleep(0.01)
                 continue
-            
-            # Preprocess
+
             input_tensor = preprocess_frame(frame).to(device)
-            
-            # Inference
+
             with torch.no_grad():
                 action_logits, mouse_pred = model(input_tensor, goal_id)
                 action_id = torch.argmax(action_logits, dim=1).item()
-                mouse_dx, mouse_dy = mouse_pred.cpu().numpy()[0]
-            
-            # Execute
-            execute_action(action_id, mouse_dx, mouse_dy)
-            
+                raw_mouse = mouse_pred.cpu().numpy()[0]
+
+            # ✅ EMA 平滑鼠标输出
+            smoothed_mouse = mouse_smoother.update(raw_mouse)
+
+            execute_action(action_id, smoothed_mouse[0], smoothed_mouse[1])
+
             frame_count += 1
             if frame_count % 10 == 0:
                 print(f"[Inference] Frame {frame_count}: action={ACTION_NAMES[action_id]} "
-                      f"mouse=({mouse_dx:.2f}, {mouse_dy:.2f})", flush=True)
-            
+                      f"mouse=({smoothed_mouse[0]:.3f}, {smoothed_mouse[1]:.3f}) "
+                      f"raw=({raw_mouse[0]:.3f}, {raw_mouse[1]:.3f})", flush=True)
+
             time.sleep(1.0 / args.fps)
-    
+
     except KeyboardInterrupt:
         print("\n[Inference] Stopped by user", flush=True)
-    
+
     finally:
         camera.stop()
         print(f"\n[Inference] Total frames: {frame_count}", flush=True)
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, required=True, help="Model checkpoint path")
-    parser.add_argument("--goal-id", type=int, default=0, help="Goal ID (default 0)")
+    parser.add_argument("--goal-id", type=int, default=0, help="Goal ID")
     parser.add_argument("--duration", type=int, default=300, help="Duration in seconds")
     parser.add_argument("--fps", type=int, default=10, help="Inference FPS")
+    parser.add_argument("--ema-alpha", type=float, default=0.3,
+                        help="EMA smoothing alpha (0=smooth, 1=no smoothing)")
     args = parser.parse_args()
     main(args)
