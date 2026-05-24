@@ -76,14 +76,14 @@ def main(args):
     print(f"[Inference] Model: {args.model}", flush=True)
     print(f"[Inference] Goal ID: {args.goal_id}", flush=True)
     print(f"[Inference] Pixels per unit: {args.pixels_per_unit}", flush=True)
-    print(f"[Inference] EMA alpha: {args.emu_alpha}", flush=True)
+    print(f"[Inference] EMA alpha: {args.ema_alpha}", flush=True)
 
     camera = dxcam.create(output_color="BGR", region=(0, 0, 1920, 1080))
     camera.start(region=(0, 0, 1920, 1080), target_fps=args.fps)
     print(f"[Inference] Camera started, FPS={args.fps}", flush=True)
 
     goal_id = torch.tensor([args.goal_id], dtype=torch.long).to(device)
-    mouse_smoother = EMASmoother(alpha=args.emu_alpha)
+    mouse_smoother = EMASmoother(alpha=args.ema_alpha)
 
     start_time = time.time()
     frame_count = 0

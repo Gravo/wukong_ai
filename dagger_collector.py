@@ -302,10 +302,14 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, required=True, help="Path to trained model")
-    parser.add_argument("--goal-id", type=int, default=1, help="Goal ID")
+    parser.add_argument("--goal-id", type=int, default=0, help="Goal ID (0-indexed)")
     parser.add_argument("--output", type=str, default="dagger_data.h5", help="Output h5 file")
     parser.add_argument("--fps", type=int, default=10, help="Camera FPS")
     parser.add_argument("--emu-alpha", type=float, default=0.3, help="EMA smoothing alpha")
     parser.add_argument("--pixels-per-unit", type=float, default=50, help="Mouse output scaling")
     args = parser.parse_args()
+    
+    # 转换为 0-indexed（用户接口是 0-indexed）
+    # args.goal_id 已经是 0-indexed，无需转换
+    
     main(args)

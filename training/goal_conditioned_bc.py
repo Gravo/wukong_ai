@@ -229,8 +229,17 @@ def train(args):
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=0)
 
     all_goal_ids = [dataset.samples[i]['goal_id'] for i in range(len(dataset))]
+    
+    # 确保 goal_ids 是 0-indexed
+    min_gid = min(all_goal_ids)
+    if min_gid >= 1:  # 数据是 1-indexed，需要转换
+        print(f"[Train] ⚠️  goal_ids are 1-indexed (min={min_gid}), converting to 0-indexed...", flush=True)
+        for s in dataset.samples:
+            s['goal_id'] -= 1
+        all_goal_ids = [s['goal_id'] for s in dataset.samples]
+    
     num_goals = max(all_goal_ids) + 1
-    print(f"[Train] Detected {num_goals} goals", flush=True)
+    print(f"[Train] Detected {num_goals} goals (0-indexed)", flush=True)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = GoalConditionedBC(num_goals=num_goals).to(device)

@@ -220,7 +220,17 @@ def main(args):
     )
 
     # 2. 初始化模型
-    num_goals = max(set(s[5] for s in dataset.samples)) + 1 if dataset.samples else 3
+    # 确保 goal_id 是 0-indexed
+    all_goal_ids = set(s[5] for s in dataset.samples)
+    min_gid = min(all_goal_ids) if all_goal_ids else 0
+    if min_gid >= 1:  # 数据是 1-indexed，需要转换
+        print(f"[Train] ⚠️  goal_ids are 1-indexed (min={min_gid}), converting to 0-indexed...", flush=True)
+        # 转换 dataset.samples 中的 goal_id
+        dataset.samples = [(h5, fidx, act, mdx, mdy, gid-1, ist) for (h5, fidx, act, mdx, mdy, gid, ist) in dataset.samples]
+        all_goal_ids = set(s[5] for s in dataset.samples)
+    
+    num_goals = max(all_goal_ids) + 1 if all_goal_ids else 1
+    print(f"[Train] Detected {num_goals} goals (0-indexed)", flush=True)
     model = GoalConditionedBC(num_goals=num_goals).to(device)
 
     # 3. 优化器
