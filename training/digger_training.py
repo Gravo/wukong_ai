@@ -1,14 +1,15 @@
 """
-dagger_training.py - DAgger 训练脚本 v1.0
+digger_training.py - DAgger 训练脚本 v2.0 (懒加载)
 加载人类数据 + DAgger纠正数据，重新训练模型
+v2.0: 懒加载模式，避免OOM
 
 Usage:
     C:\Python\python.exe -u training\digger_training.py ^
-      --human-data pathfinding:data ^
-      --dagger-data dagger:data ^
+      --human-data pathfinding_data ^
+      --dagger-data . ^
       --epochs 30 --batch-size 32 --lr 0.001
 """
-import argparse, time, os, h5py, glob, json
+import argparse, time, os, h5py, glob, json, cv2
 import numpy as np
 import torch
 import torch.nn as nn
@@ -21,145 +22,94 @@ from goal_conditioned_bc import GoalConditionedBC
 
 
 class DAggerDataset(Dataset):
-    """DAgger数据集：支持人类数据 + DAgger纠正数据"""
+    """DAgger数据集：懒加载模式，避免OOM"""
     def __init__(self, human_data_dir, dagger_data_dir, max_samples=None, filter_idle=True):
-        self.frames = []
-        self.actions = []
-        self.mouse_dx = []
-        self.mouse_dy = []
-        self.goal_ids = []
-        self.is_start = []
+        self.samples = []  # [(h5_path, frame_idx, action, mouse_dx, mouse_dy, goal_id, is_start)]
+        self.mouse_dx_all = []
+        self.mouse_dy_all = []
+        self._mean = np.array([0.485, 0.456, 0.406], dtype=np.float32).reshape(1, 1, 3)
+        self._std = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(1, 1, 3)
 
-        # 1. 加载人类数据
         print(f"[DAggerDataset] Loading human data from {human_data_dir}...")
-        human_files = sorted(glob.glob(os.path.join(human_data_dir, "*.h5")))
-        for h5_file in human_files:
+        for h5_file in sorted(glob.glob(os.path.join(human_data_dir, "*.h5"))):
             self._load_human_file(h5_file, filter_idle)
-        print(f"[DAggerDataset] ✅ Human data: {len(self.frames)} samples")
+        print(f"[DAggerDataset] ✅ Human data: {len(self.samples)} samples")
 
-        # 2. 加载DAgger纠正数据
         if dagger_data_dir and os.path.exists(dagger_data_dir):
             print(f"[DAggerDataset] Loading DAgger data from {dagger_data_dir}...")
-            dagger_files = sorted(glob.glob(os.path.join(dagger_data_dir, "*.h5")))
-            for h5_file in dagger_files:
-                self._load_dagger_file(h5_file, filter_idle)
-            print(f"[DAggerDataset] ✅ DAgger data: {len(self.frames)} total samples")
+            for h5_file in sorted(glob.glob(os.path.join(dagger_data_dir, "*.h5"))):
+                self._load_dagger_file(h5_file)
+            print(f"[DAggerDataset] ✅ DAgger data: {len(self.samples)} total samples")
 
-        # 3. 截断（可选）
-        if max_samples and len(self.frames) > max_samples:
+        if max_samples and len(self.samples) > max_samples:
             print(f"[DAggerDataset] ⚠️  Truncating to {max_samples} samples")
-            self.frames = self.frames[:max_samples]
-            self.actions = self.actions[:max_samples]
-            self.mouse_dx = self.mouse_dx[:max_samples]
-            self.mouse_dy = self.mouse_dy[:max_samples]
-            self.goal_ids = self.goal_ids[:max_samples]
-            self.is_start = self.is_start[:max_samples]
+            self.samples = self.samples[:max_samples]
 
-        # 4. 计算鼠标标准差（用于归一化）
-        self.mouse_dx = np.array(self.mouse_dx, dtype=np.float32)
-        self.mouse_dy = np.array(self.mouse_dy, dtype=np.float32)
-        self.mouse_dx_std = self.mouse_dx.std() + 1e-8
-        self.mouse_dy_std = self.mouse_dy.std() + 1e-8
-        self.mouse_dx = self.mouse_dx / self.mouse_dx_std
-        self.mouse_dy = self.mouse_dy / self.mouse_dy_std
+        self.mouse_dx_all = np.array(self.mouse_dx_all, dtype=np.float32)
+        self.mouse_dy_all = np.array(self.mouse_dy_all, dtype=np.float32)
+        self.mouse_dx_std = self.mouse_dx_all.std() + 1e-8
+        self.mouse_dy_std = self.mouse_dy_all.std() + 1e-8
+        del self.mouse_dx_all, self.mouse_dy_all
 
-        print(f"[DAggerDataset] ✅ Final: {len(self.frames)} samples")
+        # Normalize mouse in-place
+        normalized = []
+        for h5, fidx, act, mdx, mdy, gid, ist in self.samples:
+            normalized.append((h5, fidx, act, mdx/self.mouse_dx_std, mdy/self.mouse_dy_std, gid, ist))
+        self.samples = normalized
+
+        print(f"[DAggerDataset] ✅ Final: {len(self.samples)} samples")
         print(f"[DAggerDataset] 📊 Mouse std: dx={self.mouse_dx_std:.2f}, dy={self.mouse_dy_std:.2f}")
 
     def _load_human_file(self, h5_file, filter_idle):
-        """加载人类数据文件（标准格式）"""
         try:
             with h5py.File(h5_file, 'r') as f:
-                if 'frames' not in f:
-                    return
-                frames = f['frames'][:]
+                if 'frames' not in f: return
                 actions = f['actions'][:]
                 mouse_dx = f['mouse_dx'][:]
                 mouse_dy = f['mouse_dy'][:]
                 goal_id = f.attrs.get('goal_id', 0)
-
-                # 过滤idle帧
-                if filter_idle:
-                    non_idle = actions != 0
-                    frames = frames[non_idle]
-                    actions = actions[non_idle]
-                    mouse_dx = mouse_dx[non_idle]
-                    mouse_dy = mouse_dy[non_idle]
-
-                # 标记为起始帧（前10帧）
-                is_start = np.zeros(len(frames), dtype=np.bool_)
-                is_start[:min(10, len(frames))] = True
-
-                self.frames.extend(frames)
-                self.actions.extend(actions)
-                self.mouse_dx.extend(mouse_dx)
-                self.mouse_dy.extend(mouse_dy)
-                self.goal_ids.extend([goal_id] * len(frames))
-                self.is_start.extend(is_start)
-
+                indices = np.where(actions != 0)[0].tolist() if filter_idle else list(range(len(actions)))
+                is_start_arr = np.zeros(len(actions), dtype=np.bool_)
+                is_start_arr[:min(10, len(actions))] = True
+                for i in indices:
+                    self.samples.append((h5_file, int(i), int(actions[i]), float(mouse_dx[i]), float(mouse_dy[i]), int(goal_id), bool(is_start_arr[i])))
+                    self.mouse_dx_all.append(float(mouse_dx[i]))
+                    self.mouse_dy_all.append(float(mouse_dy[i]))
         except Exception as e:
-            print(f"[DAggerDataset] ❌ Error loading {h5_file}: {e}")
+            print(f"[DAggerDataset] ❌ {h5_file}: {e}")
 
-    def _load_dagger_file(self, h5_file, filter_idle):
-        """加载DAgger数据文件（纠正数据）"""
+    def _load_dagger_file(self, h5_file):
         try:
             with h5py.File(h5_file, 'r') as f:
-                if 'frames' not in f:
-                    return
-
-                frames = f['frames'][:]
-                ai_actions = f['ai_actions'][:]
+                if 'frames' not in f: return
                 human_actions = f['human_actions'][:]
                 mouse_dx = f['mouse_dx'][:]
                 mouse_dy = f['mouse_dy'][:]
-                intervention = f['intervention'][:]
                 goal_id = f.attrs.get('goal_id', 0)
-
-                # 只保留"干预帧"（人类纠正的数据）
-                corrected = human_actions != -1
-                frames = frames[corrected]
-                actions = human_actions[corrected]  # 使用人类纠正的动作作为标签
-                mouse_dx = mouse_dx[corrected]
-                mouse_dy = mouse_dy[corrected]
-                intervention = intervention[corrected]
-
-                if len(frames) == 0:
-                    return
-
-                # 标记为起始帧
-                is_start = np.zeros(len(frames), dtype=np.bool_)
-                is_start[:min(10, len(frames))] = True
-
-                self.frames.extend(frames)
-                self.actions.extend(actions)
-                self.mouse_dx.extend(mouse_dx)
-                self.mouse_dy.extend(mouse_dy)
-                self.goal_ids.extend([goal_id] * len(frames))
-                self.is_start.extend(is_start)
-
-                print(f"  📊 {os.path.basename(h5_file)}: {len(frames)} corrected samples")
-
+                corrected = np.where(human_actions != -1)[0]
+                print(f"  📊 {os.path.basename(h5_file)}: {len(corrected)} corrected samples")
+                if len(corrected) == 0: return
+                is_start_arr = np.zeros(len(human_actions), dtype=np.bool_)
+                is_start_arr[:min(10, len(human_actions))] = True
+                for i in corrected:
+                    self.samples.append((h5_file, int(i), int(human_actions[i]), float(mouse_dx[i]), float(mouse_dy[i]), int(goal_id), bool(is_start_arr[i])))
+                    self.mouse_dx_all.append(float(mouse_dx[i]))
+                    self.mouse_dy_all.append(float(mouse_dy[i]))
         except Exception as e:
-            print(f"[DAggerDataset] ❌ Error loading {h5_file}: {e}")
+            print(f"[DAggerDataset] ❌ {h5_file}: {e}")
 
     def __len__(self):
-        return len(self.frames)
+        return len(self.samples)
 
     def __getitem__(self, idx):
-        frame = self.frames[idx]
-        action = self.actions[idx]
-        mouse_dx = self.mouse_dx[idx]
-        mouse_dy = self.mouse_dy[idx]
-        goal_id = self.goal_ids[idx]
-        is_start = self.is_start[idx]
-
-        # 预处理frame
+        h5_path, fidx, action, mouse_dx, mouse_dy, goal_id, is_start = self.samples[idx]
+        with h5py.File(h5_path, 'r') as f:
+            frame = f['frames'][fidx]
+        if frame.shape[0] != 224 or frame.shape[1] != 224:
+            frame = cv2.resize(frame, (224, 224))
         frame = frame.astype(np.float32) / 255.0
-        mean = np.array([0.485, 0.456, 0.406], dtype=np.float32).reshape(1, 1, 3)
-        std = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(1, 1, 3)
-        frame = (frame - mean) / std
+        frame = (frame - self._mean) / self._std
         frame = frame.transpose(2, 0, 1)
-
         return (
             torch.from_numpy(frame),
             torch.tensor(action, dtype=torch.long),
@@ -193,13 +143,15 @@ def train_dagger(model, dataloader, optimizer, device, epoch, mouse_weight=10.0,
         # 1. 动作分类损失
         action_loss = F.cross_entropy(action_logits, actions)
 
-        # 2. 鼠标回归损失（支持逐样本加权）
+        # 2. 鼠标回归损失
         mouse_criterion = nn.MSELoss(reduction='none')
         mouse_loss = mouse_criterion(mouse_pred, mouse_target)
-        mouse_loss = mouse_loss.mean()  # 简化：不加权
+        mouse_loss = mouse_loss.mean()
 
         # 3. 起始帧鼠标损失加权
-        start_mouse_loss = mouse_loss * is_start.float().mean() * start_mouse_weight
+        start_mask = is_start.float()
+        start_ratio = start_mask.mean()
+        start_mouse_loss = mouse_loss * start_ratio * start_mouse_weight
 
         # 4. 方向一致性损失
         if mouse_pred.shape[0] > 1:
@@ -242,7 +194,7 @@ def train_dagger(model, dataloader, optimizer, device, epoch, mouse_weight=10.0,
 def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"\n{'='*60}")
-    print(f"  DAgger Training (v1.0)")
+    print(f"  DAgger Training (v2.0 - Lazy Loading)")
     print(f"  Human data: {args.human_data}")
     print(f"  DAgger data: {args.dagger_data}")
     print(f"  Epochs: {args.epochs}")
@@ -268,7 +220,7 @@ def main(args):
     )
 
     # 2. 初始化模型
-    num_goals = len(set(dataset.goal_ids)) if dataset.goal_ids else 3
+    num_goals = max(set(s[5] for s in dataset.samples)) + 1 if dataset.samples else 3
     model = GoalConditionedBC(num_goals=num_goals).to(device)
 
     # 3. 优化器
@@ -292,7 +244,7 @@ def main(args):
 
         # 保存checkpoint
         if epoch % args.save_interval == 0 or epoch == args.epochs:
-            checkpoint_path = os.path.join(args.output_dir, f"goal_bc_epoch_{epoch:03d}.pt")
+            checkpoint_path = os.path.join(args.output_dir, f"goal_bc_dagger_epoch_{epoch:03d}.pt")
             torch.save(model.state_dict(), checkpoint_path)
             print(f"  [Save] Checkpoint saved: {checkpoint_path}", flush=True)
 
@@ -307,18 +259,18 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--human-data", type=str, required=True, help="Directory with human data (h5 files)")
-    parser.add_argument("--dagger-data", type=str, default=None, help="Directory with DAgger data (h5 files)")
-    parser.add_argument("--epochs", type=int, default=30, help="Number of epochs")
-    parser.add_argument("--batch-size", type=int, default=32, help="Batch size")
-    parser.add_argument("--lr", type=float, default=0.001, help="Learning rate")
-    parser.add_argument("--max-samples", type=int, default=None, help="Max samples (truncate)")
-    parser.add_argument("--no-filter-idle", action="store_true", help="Disable idle frame filtering")
-    parser.add_argument("--mouse-weight", type=float, default=10.0, help="Mouse loss weight")
-    parser.add_argument("--start-mouse-weight", type=float, default=20.0, help="Start frame mouse loss weight")
-    parser.add_argument("--direction-weight", type=float, default=0.5, help="Direction consistency loss weight")
-    parser.add_argument("--save-interval", type=int, default=10, help="Save checkpoint every N epochs")
-    parser.add_argument("--output-dir", type=str, default="checkpoints", help="Output directory for checkpoints")
+    parser.add_argument("--human-data", type=str, required=True)
+    parser.add_argument("--dagger-data", type=str, default=None)
+    parser.add_argument("--epochs", type=int, default=30)
+    parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument("--lr", type=float, default=0.001)
+    parser.add_argument("--max-samples", type=int, default=None)
+    parser.add_argument("--no-filter-idle", action="store_true")
+    parser.add_argument("--mouse-weight", type=float, default=10.0)
+    parser.add_argument("--start-mouse-weight", type=float, default=20.0)
+    parser.add_argument("--direction-weight", type=float, default=0.5)
+    parser.add_argument("--save-interval", type=int, default=10)
+    parser.add_argument("--output-dir", type=str, default="checkpoints")
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
