@@ -1,11 +1,13 @@
 """
-inference_goal.py - Real-time inference with trained Goal-Conditioned BC model v2.0
-新增：鼠标 EMA 平滑（减少左右抖动）
+inference_goal.py - Goal-Conditioned BC 推理 v3.0
+- tanh+可学习缩放的鼠标头
+- EMA 鼠标平滑
+- 模型输出已含 mouse_scale，推理只需乘 pixels_per_unit
 
 Usage:
     C:\Python\python.exe -u training\inference_goal.py ^
-      --model checkpoints\goal_bc_epoch_030.pt ^
-      --goal-id 1 --duration 60 --fps 10
+      --model checkpoints\goal_bc_epoch_010.pt ^
+      --goal-id 1 --duration 60 --fps 10 --pixels-per-unit 50
 """
 import argparse, time, numpy as np, torch, os, sys
 
@@ -23,7 +25,6 @@ ACTION_KEYS = {
 
 
 class EMASmoother:
-    """指数移动平均平滑器，减少鼠标输出抖动"""
     def __init__(self, alpha=0.3):
         self.alpha = alpha
         self.value = None
@@ -37,7 +38,6 @@ class EMASmoother:
 
 
 def preprocess_frame(frame):
-    """Preprocess frame to (1, 3, 224, 224)"""
     import cv2
     frame = cv2.resize(frame, (224, 224))
     frame = frame.astype(np.float32) / 255.0
@@ -48,10 +48,9 @@ def preprocess_frame(frame):
     return torch.from_numpy(frame).unsqueeze(0)
 
 
-def execute_action(action_id, mouse_dx, mouse_dy):
-    """Execute predicted action"""
-    dx = int(mouse_dx * 50)
-    dy = int(mouse_dy * 50)
+def execute_action(action_id, mouse_dx, mouse_dy, pixels_per_unit):
+    dx = int(mouse_dx * pixels_per_unit)
+    dy = int(mouse_dy * pixels_per_unit)
     if abs(dx) > 1 or abs(dy) > 1:
         pdi.moveRel(dx, dy, relative=True)
     key = ACTION_KEYS.get(action_id)
@@ -66,7 +65,6 @@ def execute_action(action_id, mouse_dx, mouse_dy):
 def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Auto-detect num_goals from checkpoint
     checkpoint = torch.load(args.model, map_location='cpu')
     num_goals = checkpoint['goal_embed.weight'].shape[0]
     print(f"[Inference] Auto-detected num_goals={num_goals}", flush=True)
@@ -74,18 +72,18 @@ def main(args):
     model = GoalConditionedBC(num_goals=num_goals).to(device)
     model.load_state_dict(checkpoint)
     model.eval()
-    print(f"[Inference] Model loaded: {args.model}", flush=True)
-    print(f"[Inference] Device: {device}", flush=True)
-    print(f"[Inference] Goal ID: {args.goal_id}", flush=True)
-    print(f"[Inference] EMA alpha: {args.ema_alpha}", flush=True)
 
-    # Setup camera
+    print(f"[Inference] Model: {args.model}", flush=True)
+    print(f"[Inference] Goal ID: {args.goal_id}", flush=True)
+    print(f"[Inference] Pixels per unit: {args.pixels_per_unit}", flush=True)
+    print(f"[Inference] EMA alpha: {args.emu_alpha}", flush=True)
+
     camera = dxcam.create(output_color="BGR", region=(0, 0, 1920, 1080))
     camera.start(region=(0, 0, 1920, 1080), target_fps=args.fps)
     print(f"[Inference] Camera started, FPS={args.fps}", flush=True)
 
     goal_id = torch.tensor([args.goal_id], dtype=torch.long).to(device)
-    mouse_smoother = EMASmoother(alpha=args.ema_alpha)
+    mouse_smoother = EMASmoother(alpha=args.emu_alpha)
 
     start_time = time.time()
     frame_count = 0
@@ -106,10 +104,8 @@ def main(args):
                 action_id = torch.argmax(action_logits, dim=1).item()
                 raw_mouse = mouse_pred.cpu().numpy()[0]
 
-            # ✅ EMA 平滑鼠标输出
             smoothed_mouse = mouse_smoother.update(raw_mouse)
-
-            execute_action(action_id, smoothed_mouse[0], smoothed_mouse[1])
+            execute_action(action_id, smoothed_mouse[0], smoothed_mouse[1], args.pixels_per_unit)
 
             frame_count += 1
             if frame_count % 10 == 0:
@@ -129,11 +125,12 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, required=True, help="Model checkpoint path")
-    parser.add_argument("--goal-id", type=int, default=0, help="Goal ID")
-    parser.add_argument("--duration", type=int, default=300, help="Duration in seconds")
-    parser.add_argument("--fps", type=int, default=10, help="Inference FPS")
-    parser.add_argument("--ema-alpha", type=float, default=0.3,
-                        help="EMA smoothing alpha (0=smooth, 1=no smoothing)")
+    parser.add_argument("--model", type=str, required=True)
+    parser.add_argument("--goal-id", type=int, default=0)
+    parser.add_argument("--duration", type=int, default=300)
+    parser.add_argument("--fps", type=int, default=10)
+    parser.add_argument("--ema-alpha", type=float, default=0.3)
+    parser.add_argument("--pixels-per-unit", type=float, default=50,
+                        help="Pixels per unit of model mouse output (training normalized by std, so this should be ~avg_mouse_std)")
     args = parser.parse_args()
     main(args)

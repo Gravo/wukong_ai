@@ -105,9 +105,15 @@ class GoalConditionedDataset(Dataset):
                     std = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(1, 3, 1, 1)
                     frames = (frames - mean) / std
 
-                    # 归一化鼠标数据到 [-1, 1]
-                    mouse_dx = mouse_dx.astype(np.float32) / 224.0
-                    mouse_dy = mouse_dy.astype(np.float32) / 224.0
+                    # 归一化鼠标数据：除以标准差，让模型目标值有合理范围
+                    mouse_std = max(mouse_dx.std(), 1.0)  # 避免除0
+                    mouse_dy_std = max(mouse_dy.std(), 1.0)
+                    mouse_dx = mouse_dx.astype(np.float32) / mouse_std
+                    mouse_dy = mouse_dy.astype(np.float32) / mouse_dy_std
+                    # Clamp 到 [-3, 3] 避免极端值
+                    mouse_dx = np.clip(mouse_dx, -3.0, 3.0)
+                    mouse_dy = np.clip(mouse_dy, -3.0, 3.0)
+                    print(f"[Data] 📊 {h5_file}: mouse dx_std={mouse_std:.1f} dy_std={mouse_dy_std:.1f}", flush=True)
 
                     # 构建样本 + 过滤 idle 帧 + 标记起始帧
                     n_valid = 0

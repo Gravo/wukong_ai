@@ -1,12 +1,17 @@
 """
-dagger_collector.py - DAgger 数据采集器 v1.0
+dagger_collector.py - DAgger 数据采集器 v1.1
 AI推理 + 人工干预 + 纠正数据记录
+
+v1.1 修复：
+  - 干预模式切换键从 'Q' 改为 'F10'（避免触发游戏技能）
+  - 添加 ESC 键退出功能
+  - 使用 keyboard.add_hotkey() + suppress=True 拦截按键
 
 Usage:
     C:\Python\python.exe -u dagger_collector.py ^
       --model checkpoints\goal_bc_epoch_030.pt ^
       --goal-id 1 --output pathfinding_dagger_01.h5 ^
-      --fps 10 --emu-alpha 0.3
+      --fps 10 --emu-alpha 0.3 --pixels-per-unit 50
 """
 import argparse, time, os, h5py, json, glob
 import numpy as np
@@ -15,15 +20,40 @@ import cv2
 import dxcam
 import pydirectinput as pdi
 import keyboard as kb
+import ctypes
+from ctypes import wintypes
 
 from training.goal_conditioned_bc import GoalConditionedBC
 
-# 动作定义（与data_collector_v3.py一致）
-ACTION_NAMES = ["idle","attack","heavy","dodge","forward","right","left","dodge_atk","lock","heal"]
+
+# ========== 全局变量（键盘回调用） ==========
+_intervention_mode = False
+_stop_requested = False
+_last_mouse = None  # 鼠标位置追踪（用于DAgger干预模式）
+
+def toggle_intervention():
+    """切换干预模式（F10键回调）"""
+    global _intervention_mode
+    _intervention_mode = not _intervention_mode
+    if _intervention_mode:
+        print(f"\n[DAgger] ⚠️  Intervention mode ON. Human taking over...", flush=True)
+    else:
+        print(f"\n[DAgger] ✅ Intervention mode OFF. AI resuming...", flush=True)
+
+def request_stop():
+    """请求停止（ESC键回调）"""
+    global _stop_requested
+    _stop_requested = True
+    print(f"\n[DAgger] Stop requested. Saving data...", flush=True)
+
+
+# ========== 动作定义（与data_collector_v3.py一致） ==========
+ACTION_NAMES = ["idle", "attack", "heavy", "dodge", "forward", "right", "left", "dodge_atk", "lock", "heal"]
 ACTION_KEYS = {
     0: None, 1: "j", 2: "k", 3: "space", 4: "w",
     5: "d", 6: "a", 7: "j", 8: "r", 9: "v",
 }
+
 
 class EMASmoother:
     def __init__(self, alpha=0.3):
@@ -39,7 +69,7 @@ class EMASmoother:
 
 
 def preprocess_frame(frame):
-    """预处理游戏画面"""
+    """预处理游戏画面：resize + normalize + to tensor"""
     frame = cv2.resize(frame, (224, 224))
     frame = frame.astype(np.float32) / 255.0
     mean = np.array([0.485, 0.456, 0.406], dtype=np.float32).reshape(1, 1, 3)
@@ -50,7 +80,7 @@ def preprocess_frame(frame):
 
 
 def execute_action(action_id, mouse_dx, mouse_dy, pixels_per_unit):
-    """执行动作"""
+    """执行动作：鼠标移动 + 键盘按键"""
     dx = int(mouse_dx * pixels_per_unit)
     dy = int(mouse_dy * pixels_per_unit)
     if abs(dx) > 1 or abs(dy) > 1:
@@ -67,23 +97,63 @@ def execute_action(action_id, mouse_dx, mouse_dy, pixels_per_unit):
 
 def detect_human_action():
     """检测人工干预时的按键（简化版：记录按下的第一个有效键）"""
-    for key_name, key_code in [("w", 0x57), ("a", 0x41), ("d", 0x44), 
-                                ("j", 0x4A), ("k", 0x4B), ("space", 0x20),
-                                ("r", 0x52), ("v", 0x56)]:
+    key_map = [
+        ("w", 0x57, 4), ("a", 0x41, 6), ("d", 0x44, 5),
+        ("j", 0x4A, 1), ("k", 0x4B, 2), ("space", 0x20, 3),
+        ("r", 0x52, 8), ("v", 0x56, 9)
+    ]
+    for key_name, _, action_id in key_map:
         if kb.is_pressed(key_name):
-            return ACTION_NAMES.index(key_name) if key_name in ACTION_NAMES else None
+            return action_id
     return 0  # 默认idle
 
 
+def save_dagger_data(output_path, frames, ai_actions, human_actions,
+                    mouse_dx, mouse_dy, intervention_flags, goal_id, is_checkpoint):
+    """保存DAgger数据到h5文件（支持追加）"""
+    mode = "a" if is_checkpoint and os.path.exists(output_path) else "w"
+    with h5py.File(output_path, mode) as f:
+        if "frames" not in f:
+            f.create_dataset("frames", data=np.array(frames), compression="gzip", chunks=True)
+            f.create_dataset("ai_actions", data=np.array([-1 if a is None else a for a in ai_actions]), compression="gzip")
+            f.create_dataset("human_actions", data=np.array([-1 if a is None else a for a in human_actions]), compression="gzip")
+            f.create_dataset("mouse_dx", data=np.array(mouse_dx), compression="gzip")
+            f.create_dataset("mouse_dy", data=np.array(mouse_dy), compression="gzip")
+            f.create_dataset("intervention", data=np.array(intervention_flags), compression="gzip")
+            f.attrs["goal_id"] = goal_id
+            f.attrs["timestamp"] = int(time.time())
+            f.attrs["version"] = "1.1"
+        else:
+            # 追加模式（checkpoint）
+            for key, data in [
+                ("frames", frames), ("ai_actions", ai_actions), ("human_actions", human_actions),
+                ("mouse_dx", mouse_dx), ("mouse_dy", mouse_dy), ("intervention", intervention_flags)
+            ]:
+                f[key].resize((f[key].shape[0] + len(data)), axis=0)
+                if key == "frames":
+                    f[key][-len(data):] = np.array(data)
+                else:
+                    f[key][-len(data):] = np.array([-1 if a is None else a for a in data])
+
+
 def main(args):
+    global _last_mouse
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # 1. 加载模型
     print(f"[DAgger] Loading model: {args.model}", flush=True)
-    checkpoint = torch.load(args.model, map_location='cpu')
-    num_goals = checkpoint['goal_embed.weight'].shape[0]
+    checkpoint = torch.load(args.model, map_location='cpu', weights_only=False)
+    
+    # 兼容两种保存格式
+    if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+        state_dict = checkpoint['model_state_dict']
+        num_goals = state_dict['goal_embed.weight'].shape[0]
+    else:
+        state_dict = checkpoint
+        num_goals = checkpoint['goal_embed.weight'].shape[0]
+    
     model = GoalConditionedBC(num_goals=num_goals).to(device)
-    model.load_state_dict(checkpoint)
+    model.load_state_dict(state_dict)
     model.eval()
     print(f"[DAgger] Model loaded. num_goals={num_goals}", flush=True)
 
@@ -93,47 +163,63 @@ def main(args):
     camera.start(region=(0, 0, 1920, 1080), target_fps=args.fps)
     print(f"[DAgger] Camera started. FPS={args.fps}", flush=True)
 
-    # 3. 初始化数据记录
+    # 3. 初始化键盘状态
+    print(f"[DAgger] Initializing keyboard...", flush=True)
+    _intervention_mode = False
+    _stop_requested = False
+    print(f"[DAgger] ✅ Keyboard ready. F10=Toggle Intervention, ESC=Stop", flush=True)
+
+    # 4. 初始化数据记录
     frames_buffer = []
-    ai_actions = []  # AI预测的动作
-    human_actions = []  # 人工纠正的动作（如果有）
+    ai_actions = []
+    human_actions = []
     mouse_dx_buffer = []
     mouse_dy_buffer = []
-    intervention_flags = []  # 标记是否为干预帧
+    intervention_flags = []
 
-    mouse_smoother = EMASmoother(alpha=args.ema_alpha)
+    mouse_smoother = EMASmoother(alpha=args.emu_alpha)
     goal_id = torch.tensor([args.goal_id], dtype=torch.long).to(device)
 
-    print(f"\n[DAgger] Started! Press 'Q' to toggle intervention mode.", flush=True)
+    print(f"\n[DAgger] ✅ Started! Press F10 to toggle intervention mode.", flush=True)
+    print(f"[DAgger] ✅ Press ESC to stop and save.", flush=True)
     print(f"[DAgger] Goal ID: {args.goal_id}", flush=True)
     print(f"[DAgger] Output: {args.output}\n", flush=True)
 
-    # 4. 主循环
-    intervention_mode = False
+    # 5. 主循环
     frame_count = 0
     intervention_count = 0
+    _last_f10_state = False  # F10边沿检测（防止连按）
 
     try:
-        while True:
+        while not _stop_requested:
             frame = camera.get_latest_frame()
             if frame is None:
                 time.sleep(0.01)
                 continue
 
-            # 检测 'Q' 键切换干预模式
-            if kb.is_pressed('q'):
-                intervention_mode = not intervention_mode
-                if intervention_mode:
+            # === 按键检测（边沿触发，防止连按）===
+            # F10：上升沿切换干预模式（只触发一次）
+            current_f10 = kb.is_pressed('f10')
+            if current_f10 and not _last_f10_state:
+                _intervention_mode = not _intervention_mode
+                if _intervention_mode:
                     print(f"\n[DAgger] ⚠️  Intervention mode ON. Human taking over...", flush=True)
                 else:
                     print(f"\n[DAgger] ✅ Intervention mode OFF. AI resuming...", flush=True)
-                time.sleep(0.5)  # 防抖
+                time.sleep(0.1)  # 防抖
+            _last_f10_state = current_f10
+
+            # ESC：停止并保存
+            if kb.is_pressed('esc'):
+                _stop_requested = True
+                print(f"\n[DAgger] Stop requested. Saving data...", flush=True)
+                time.sleep(0.3)  # 防抖
 
             # 预处理帧
             input_tensor = preprocess_frame(frame).to(device)
 
-            if not intervention_mode:
-                # AI模式：推理 + 执行
+            if not _intervention_mode:
+                # === AI模式：推理 + 执行 ===
                 with torch.no_grad():
                     action_logits, mouse_pred = model(input_tensor, goal_id)
                     action_id = torch.argmax(action_logits, dim=1).item()
@@ -155,11 +241,20 @@ def main(args):
                           f"mouse=({smoothed_mouse[0]:.3f}, {smoothed_mouse[1]:.3f})", flush=True)
 
             else:
-                # 人工干预模式：记录人工操作
+                # === 人工干预模式：记录人工操作 ===
+                global _last_mouse
                 human_action_id = detect_human_action()
 
-                # 简单鼠标追踪（这里可以改进：实际应该记录人类鼠标移动）
-                mouse_dx, mouse_dy = 0, 0  # 简化：暂时不记录鼠标
+                # 记录人类鼠标移动（使用ctypes获取鼠标位置）
+                pt = wintypes.POINT()
+                ctypes.windll.user32.GetCursorPos(ctypes.byref(pt))
+                
+                if _last_mouse is None:
+                    _last_mouse = (pt.x, pt.y)
+                
+                mouse_dx = (pt.x - _last_mouse[0]) / args.pixels_per_unit
+                mouse_dy = (pt.y - _last_mouse[1]) / args.pixels_per_unit
+                _last_mouse = (pt.x, pt.y)
 
                 # 执行人工动作（已经在做了，因为是人类在控制）
                 # 这里只记录数据
@@ -193,43 +288,15 @@ def main(args):
 
     finally:
         camera.stop()
+        kb.remove_all_hotkeys()
 
-        # 5. 保存数据
+        # 6. 保存数据
         print(f"\n[DAgger] Saving data to {args.output}...", flush=True)
-        save_dagger_data(args.output, frames_buffer, ai_actions, human_actions,
-                       mouse_dx_buffer, mouse_dy_buffer, intervention_flags,
-                       args.goal_id, is_checkpoint=False)
+        if len(frames_buffer) > 0:
+            save_dagger_data(args.output, frames_buffer, ai_actions, human_actions,
+                           mouse_dx_buffer, mouse_dy_buffer, intervention_flags,
+                           args.goal_id, is_checkpoint=False)
         print(f"[DAgger] ✅ Data saved. Total frames: {frame_count}, Interventions: {intervention_count}", flush=True)
-
-
-def save_dagger_data(output_path, frames, ai_actions, human_actions,
-                     mouse_dx, mouse_dy, intervention_flags, goal_id, is_checkpoint):
-    """保存DAgger数据到h5文件"""
-    mode = "a" if is_checkpoint and os.path.exists(output_path) else "w"
-    with h5py.File(output_path, mode) as f:
-        if "frames" not in f:
-            f.create_dataset("frames", data=np.array(frames), compression="gzip")
-            f.create_dataset("ai_actions", data=np.array([-1 if a is None else a for a in ai_actions]), compression="gzip")
-            f.create_dataset("human_actions", data=np.array([-1 if a is None else a for a in human_actions]), compression="gzip")
-            f.create_dataset("mouse_dx", data=np.array(mouse_dx), compression="gzip")
-            f.create_dataset("mouse_dy", data=np.array(mouse_dy), compression="gzip")
-            f.create_dataset("intervention", data=np.array(intervention_flags), compression="gzip")
-            f.attrs["goal_id"] = goal_id
-            f.attrs["timestamp"] = int(time.time())
-        else:
-            # 追加模式（checkpoint）
-            f["frames"].resize((f["frames"].shape[0] + len(frames)), axis=0)
-            f["frames"][-len(frames):] = np.array(frames)
-            f["ai_actions"].resize((f["ai_actions"].shape[0] + len(ai_actions)), axis=0)
-            f["ai_actions"][-len(ai_actions):] = np.array([-1 if a is None else a for a in ai_actions])
-            f["human_actions"].resize((f["human_actions"].shape[0] + len(human_actions)), axis=0)
-            f["human_actions"][-len(human_actions):] = np.array([-1 if a is None else a for a in human_actions])
-            f["mouse_dx"].resize((f["mouse_dx"].shape[0] + len(mouse_dx)), axis=0)
-            f["mouse_dx"][-len(mouse_dx):] = np.array(mouse_dx)
-            f["mouse_dy"].resize((f["mouse_dy"].shape[0] + len(mouse_dy)), axis=0)
-            f["mouse_dy"][-len(mouse_dy):] = np.array(mouse_dy)
-            f["intervention"].resize((f["intervention"].shape[0] + len(intervention_flags)), axis=0)
-            f["intervention"][-len(intervention_flags):] = np.array(intervention_flags)
 
 
 if __name__ == "__main__":
