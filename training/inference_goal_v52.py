@@ -93,21 +93,20 @@ def execute_action(pred_class, last_mouse_dx):
     
     if pred_class == 0:
         # idle: do nothing
-        return 0
+        return last_mouse_dx  # preserve direction context
     elif pred_class == 1:
         # forward
         pyautogui.keyDown('w')
-        return 0
+        return last_mouse_dx  # preserve direction context
     elif pred_class in (2, 3, 4):
         # Turning: move mouse in the same direction as last turn
         delta = MOUSE_DELTAS[pred_class]
+        # Use sign of last_mouse_dx; default right (+1) if never moved
         direction = 1 if last_mouse_dx >= 0 else -1
-        if last_mouse_dx == 0:
-            direction = 1  # default right
         pyautogui.move(delta * direction, 0)
         pyautogui.keyDown('w')
         return delta * direction
-    return 0
+    return last_mouse_dx
 
 
 def main(args):
@@ -187,6 +186,6 @@ if __name__ == "__main__":
     p.add_argument("--goal-id", type=int, default=0)
     p.add_argument("--num-goals", type=int, default=2)
     p.add_argument("--duration", type=int, default=60)
-    p.add_argument("--fps", type=int, default=10, help="Inference FPS (default: 10)")
+    p.add_argument("--fps", type=int, default=15, help="Inference FPS (default: 15, match training)")
     a = p.parse_args()
     main(a)
