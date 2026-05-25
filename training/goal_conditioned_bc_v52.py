@@ -177,7 +177,7 @@ def train_epoch(model, loader, opt, device, epoch, fl_fn):
 
         # Accuracy under no_grad (key fix: avoids 2nd forward with grad graph)
         with torch.no_grad():
-            _, pred = logits.argmax(dim=1)
+            pred = logits.argmax(dim=1)
             correct += (pred == actions).sum().item()
 
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
