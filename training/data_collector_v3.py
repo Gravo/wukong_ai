@@ -79,6 +79,7 @@ class GoalDataCollector:
         self._goals = []           # 目标序列（字符串列表）
         self._current_goal_id = 0  # 当前目标 ID（索引）
         self._goal_reached = []    # 每个目标是否到达
+        self._goal_id_requested = False  # ✅ 新增：G 键请求输入 goal_id
 
     # ---- Goal 配置 ----
 
@@ -151,9 +152,10 @@ class GoalDataCollector:
                 if e.event_type == kb.KEY_DOWN:
                     self._keys_pressed.add(name)
 
-                    # ✅ 新增：'G' 键标记到达目标
+                    # ✅ 修改：'G' 键请求输入 goal_id（而不是前进到下一个目标）
                     if name == 'g':
-                        self.advance_goal()
+                        self._goal_id_requested = True
+                        print("\n[Goal] Press 'G' again to input goal_id...", flush=True)
 
                 elif e.event_type == kb.KEY_UP:
                     self._keys_pressed.discard(name)
@@ -518,10 +520,21 @@ class GoalDataCollector:
                                   ep_mouse_dy[s:e_idx], ep_mouse_buttons[s:e_idx],
                                   ep_goal_ids[s:e_idx])  # ✅ 新增
 
+                # ✅ 新增：检查是否需要输入 goal_id
+                if self._goal_id_requested:
+                    self._goal_id_requested = False
+                    try:
+                        inp = input("\n[Goal] Enter goal_id (integer): ")
+                        new_gid = int(inp.strip())
+                        self._current_goal_id = new_gid
+                        print(f"[Goal] ✅ Goal ID set to {new_gid}!\n", flush=True)
+                    except Exception as e:
+                        print(f"[Goal] ❌ Invalid input: {e}\n", flush=True)
+
                 # 进度（每5秒）
                 if len(ep_frames) % (self.fps * 5) < 2 and len(ep_frames) > 0:
                     aname = ACTION_SHORT.get(action_id, "?")
-                    gname = self._goals[goal_id] if goal_id < len(self._goals) else "?"
+                    gname = self._goals[goal_id] if goal_id < len(self._goals) else f"goal_{goal_id}"
                     print(f"  [{ep_elapsed:.0f}s] frames={len(ep_frames)} fps={fps_actual:.1f} "
                           f"action={aname} goal={gname}({goal_id})", flush=True)
 
@@ -674,7 +687,7 @@ if __name__ == "__main__":
     if args.report:
         # TODO: 实现报告查看功能
         print(f"Report for {args.report}: (not implemented yet)", flush=True)
-        return
+        sys.exit(0)
 
     collector.collect(
         num_episodes=args.episodes,
