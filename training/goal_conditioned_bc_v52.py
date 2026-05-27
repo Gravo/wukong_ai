@@ -232,6 +232,10 @@ def main(args):
         dt = time.time() - t0
         if acc > best_acc:
             best_acc = acc
+            # 保存最佳模型
+            best_ckpt = os.path.join(args.output_dir, "goal_bc_v52_best.pt")
+            torch.save(model.state_dict(), best_ckpt)
+            print(f"  [Save Best] {best_ckpt} (Acc={acc:.2f}%)")
         print(f"\n  Epoch {ep}/{args.epochs}  Loss:{loss:.4f}  Acc:{acc:.2f}%  Best:{best_acc:.2f}%  Time:{dt:.1f}s\n")
         if ep % args.save_interval == 0 or ep == args.epochs:
             ckpt = os.path.join(args.output_dir, f"goal_bc_v52_epoch_{ep:03d}.pt")
