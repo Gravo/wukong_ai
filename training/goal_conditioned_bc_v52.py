@@ -151,10 +151,10 @@ class V52Model(nn.Module):
         new = nn.Conv2d(3 * num_frames, 64, 7, stride=2, padding=3, bias=False)
         if pretrained and old.weight is not None:
             with torch.no_grad():
+                # Scale by 1/num_frames to maintain output variance
+                # when stacking multiple frames (12 input channels vs 3 original)
                 for c in range(num_frames):
-                    new.weight[:, c*3:(c+1)*3].copy_(old.weight)
-                for c in range(1, num_frames):
-                    new.weight[:, c*3:(c+1)*3] += torch.randn_like(new.weight[:, c*3:(c+1)*3]) * 0.01
+                    new.weight[:, c*3:(c+1)*3].copy_(old.weight * (1.0 / num_frames))
         resnet.conv1 = new
         self.backbone = nn.Sequential(*list(resnet.children())[:-1])
         self.goal_embed = nn.Embedding(num_goals, 64)
@@ -177,7 +177,7 @@ def train_epoch(model, loader, opt, device, epoch, fl_fn):
 
         # Accuracy under no_grad (key fix: avoids 2nd forward with grad graph)
         with torch.no_grad():
-            _, pred = logits.argmax(dim=1)
+            pred = logits.argmax(dim=1)
             correct += (pred == actions).sum().item()
 
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)

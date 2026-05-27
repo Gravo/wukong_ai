@@ -87,27 +87,31 @@ def get_screen():
 def execute_action(pred_class, last_mouse_dx):
     """Execute predicted action. Returns mouse dx for direction tracking."""
     import pyautogui
+    import pydirectinput as pdi
     
-    # Release forward
-    pyautogui.keyUp('w')
+    # Disable pyautogui pause for faster response
+    pyautogui.PAUSE = 0
     
     if pred_class == 0:
-        # idle: do nothing
-        return 0
+        # idle: release forward
+        pyautogui.keyUp('w')
+        return last_mouse_dx  # preserve direction context
     elif pred_class == 1:
-        # forward
+        # forward (no turn)
         pyautogui.keyDown('w')
-        return 0
+        return last_mouse_dx  # preserve direction context
     elif pred_class in (2, 3, 4):
-        # Turning: move mouse in the same direction as last turn
+        # Turning: move mouse using DirectInput (game recognizes this)
         delta = MOUSE_DELTAS[pred_class]
+        # Use sign of last_mouse_dx; default right (+1) if never moved
         direction = 1 if last_mouse_dx >= 0 else -1
-        if last_mouse_dx == 0:
-            direction = 1  # default right
-        pyautogui.move(delta * direction, 0)
+        # pydirectinput.move RELATIVE to current position
+        print(f"  [DEBUG] pdi.move({delta * direction}, 0)")  # DEBUG
+        pdi.move(delta * direction, 0, relative=True)
+        # IMMEDIATELY hold forward (DON'T release!)
         pyautogui.keyDown('w')
         return delta * direction
-    return 0
+    return last_mouse_dx
 
 
 def main(args):
@@ -123,9 +127,47 @@ def main(args):
     print(f"[v5.2] Goal ID: {args.goal_id}, Duration: {args.duration}s")
     print(f"[v5.2] Press Ctrl+C to stop\n")
     
+    # Focus game window (黑神话: 悟空)
+    print("[v5.2] Focusing game window...")
+    try:
+        import ctypes
+        from ctypes import wintypes
+        
+        def enum_callback(hwnd, results):
+            title = ctypes.create_unicode_buffer(256)
+            ctypes.windll.user32.GetWindowTextW(hwnd, title, 256)
+            if 'Black Myth' in title.value or '黑神话' in title.value or 'Wukong' in title.value:
+                results.append(hwnd)
+            return True
+        
+        results = []
+        EnumWindows = ctypes.windll.user32.EnumWindows
+        EnumWindows(ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)(enum_callback), ctypes.byref(ctypes.c_long(0)))
+        
+        if results:
+            hwnd = results[0]
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
+            ctypes.windll.user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+            print(f"[v5.2] Game window focused!")
+        else:
+            print("[v5.2] WARNING: Game window not found! Make sure the game is running.")
+    except Exception as e:
+        print(f"[v5.2] WARNING: Could not focus window: {e}")
+    
+    # Countdown to allow manual focus
+    print("[v5.2] Starting in 5 seconds... Focus the game window NOW!")
+    for i in range(5, 0, -1):
+        print(f"  {i}...")
+        time.sleep(1)
+    print("[v5.2] Go!\n")
+    
     frame_buffer = []  # stores preprocessed frames
     last_mouse_dx = 0
     inference_dt = 1.0 / args.fps  # match training fps
+    
+    # Statistics
+    pred_counts = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
+    total_preds = 0
     
     for t_tick in range(int(args.duration * args.fps)):
         t0 = time.time()
@@ -157,7 +199,23 @@ def main(args):
             
             with torch.no_grad():
                 logits = model(x, gid)
-                pred_class = torch.argmax(logits, dim=1).item()
+                probs = torch.softmax(logits, dim=1).squeeze(0)
+                
+                # 方案A：转向类概率和 > 阈值 就转向
+                turn_prob = probs[2].item() + probs[3].item() + probs[4].item()
+                TURN_THRESHOLD = 0.3  # ← 可调：0.3=中等，0.2=高，0.1=很高
+                
+                if turn_prob > TURN_THRESHOLD:
+                    # 在转向类中选择概率最高的
+                    turn_probs = probs[2:5]  # [turn_slow, turn_medium, turn_fast]
+                    pred_class = torch.argmax(turn_probs).item() + 2
+                else:
+                    # 否则用原来的argmax
+                    pred_class = torch.argmax(logits, dim=1).item()
+            
+            # Statistics
+            pred_counts[pred_class] += 1
+            total_preds += 1
             
             last_mouse_dx = execute_action(pred_class, last_mouse_dx)
             
@@ -178,7 +236,16 @@ def main(args):
             get_screen._camera.release()
     except Exception:
         pass
+    
+    # Print statistics
     print(f"\n[Done] Ran for {args.duration}s")
+    if total_preds > 0:
+        print(f"\n=== Prediction Distribution ===")
+        for cid in range(5):
+            cnt = pred_counts[cid]
+            pct = 100.0 * cnt / total_preds
+            print(f"  {ACTION_NAMES[cid]:12s}: {cnt:5d} ({pct:5.1f}%)")
+        print(f"  {'Turn total':12s}: {pred_counts[2]+pred_counts[3]+pred_counts[4]:5d} ({100.0*(pred_counts[2]+pred_counts[3]+pred_counts[4])/total_preds:5.1f}%)")
 
 
 if __name__ == "__main__":
@@ -187,6 +254,6 @@ if __name__ == "__main__":
     p.add_argument("--goal-id", type=int, default=0)
     p.add_argument("--num-goals", type=int, default=2)
     p.add_argument("--duration", type=int, default=60)
-    p.add_argument("--fps", type=int, default=10, help="Inference FPS (default: 10)")
+    p.add_argument("--fps", type=int, default=15, help="Inference FPS (default: 15, match training)")
     a = p.parse_args()
     main(a)
