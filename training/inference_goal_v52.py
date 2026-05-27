@@ -88,10 +88,11 @@ def execute_action(pred_class, last_mouse_dx):
     """Execute predicted action. Returns mouse dx for direction tracking."""
     import pyautogui
     import pydirectinput as pdi
-    
+    import time
+
     # Disable pyautogui pause for faster response
     pyautogui.PAUSE = 0
-    
+
     if pred_class == 0:
         # idle: release forward
         pyautogui.keyUp('w')
@@ -105,12 +106,23 @@ def execute_action(pred_class, last_mouse_dx):
         delta = MOUSE_DELTAS[pred_class]
         # Use sign of last_mouse_dx; default right (+1) if never moved
         direction = 1 if last_mouse_dx >= 0 else -1
-        # pydirectinput.move RELATIVE to current position
-        print(f"  [DEBUG] pdi.move({delta * direction}, 0)")  # DEBUG
-        pdi.move(delta * direction, 0, relative=True)
+        total_dx = delta * direction
+
+        # 方法 1: 平滑移动（分步移动，更自然）
+        steps = max(1, abs(total_dx) // 50)  # 每步约 50px
+        step_x = total_dx // steps
+        delay = 0.05 / steps  # 总时间约 50ms
+
+        for _ in range(steps):
+            pdi.moveRel(step_x, 0, relative=True, duration=0)
+            time.sleep(delay)
+
+        # 方法 2: 单次移动（备选，取消注释使用）
+        # pdi.move(total_dx, 0, relative=True)
+
         # IMMEDIATELY hold forward (DON'T release!)
         pyautogui.keyDown('w')
-        return delta * direction
+        return total_dx
     return last_mouse_dx
 
 
