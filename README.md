@@ -1,298 +1,237 @@
 # 🐒 wukong_ai
 
-Black Myth: Wukong (黑神话：悟空) AI - 行为克隆寻路 + PPO战斗
+Black Myth: Wukong (黑神话：悟空) — Goal-Conditioned Behavior Cloning + ViGEmBus Gamepad Control
 
-当前目标：**虎先锋 (Tiger Vanguard)**
+**当前目标**：端到端自主寻路（Point Navigation）
 
-## 架构
+---
+
+## 架构总览
 
 ```
 wukong_ai/
-├── config.py                    # 集中配置（超参数、窗口坐标、动作空间）
+├── config.py                         # 集中配置
 ├── requirements.txt
+│
 ├── env/
-│   ├── screen_capture.py       # 高速截图 (dxcam/mss/win32)
-│   ├── blood_detector.py       # HSV色域血量检测
-│   └── action_executor.py      # pydirectinput动作执行
-├── models/
-│   ├── resnet_encoder.py       # ResNet18视觉编码器
-│   └── ppo_agent.py            # PPO Actor-Critic
+│   ├── screen_capture.py             # dxcam / mss / win32 截图
+│   ├── blood_detector.py            # HSV 血量检测
+│   └── action_executor.py           # pydirectinput 动作执行
+│
 ├── training/
-│   ├── train_combat.py         # 战斗训练主脚本
-│   └── data_collector.py       # 人类Demo数据采集 v2.1
-├── pathfinding/
-│   ├── preprocess_data.py      # h5 → npz预处理
-│   ├── behavior_clone_v2.py    # 行为克隆v2（鼠标是输出）
-│   └── inference_v2.py         # 推理v2（实时控制角色）
-├── checkpoints/                # 模型保存目录
-│   └── bc_best.pt              # 行为克隆模型
-└── pathfinding_data/           # 录制数据目录
-    ├── *.h5                    # 原始录制数据
-    └── preprocessed/
-        └── stacked_data.npz    # 预处理后的训练数据
+│   ├── goal_conditioned_bc_v55_optimized.py   # ✅ v5.5 训练脚本（当前最佳）
+│   ├── inference_goal_v56.py                 # ✅ v5.6 推理（ViGEmBus 手柄版）
+│   ├── data_collector_v3.py                  # 数据采集器 v3
+│   ├── filter_idle.py                         # 过滤 idle 帧
+│   ├── analyze_data.py                        # 训练数据分析
+│   ├── test_bucket_mapping.py                 # 手柄映射测试
+│   └── checkpoints/
+│       └── goal_bc_v55_best_acc_a.pt        # ✅ 推荐模型（Val Acc_A=94.09%）
+│
+├── pathfinding_data/                # 原始录制数据（h5）
+├── pathfinding_data_balanced/       # 平衡后数据（oversample + Focal Loss）
+│
+├── docs/                           # 技术分析文档
+│   ├── TECHNICAL_ANALYSIS.md
+│   ├── RESEARCH_BC_FAILURE_ANALYSIS.md
+│   ├── VLA_Research.md
+│   └── ...
+│
+└── checkpoints/                    # 所有模型 checkpoint
 ```
 
-## 当前状态（2026-05-19）
+---
 
-### 问题诊断
+## 当前状态（2026-06-07）
 
-**核心问题**：模型收敛但未学到有效动作
-- 行为克隆准确率达到 74%，但推理时只会往前走
-- 鼠标输出几乎恒定，视角控制失效
-- 模型选择了"最安全"的策略：idle 或 forward
+### ✅ 已完成
 
-**根因**：
-1. 数据分布失衡：idle 33.4% + forward 54.2% = 87.6%
-2. Distribution Shift：BC 只学 state→action，不理解后果
-3. 鼠标稀疏性：大部分帧鼠标不动，MSE 损失被淹没
-4. 损失函数不均衡：分类损失 vs 回归损失量级不同
+- **v5.5 训练完成**（2026-05-28）
+  - 数据：9,790 帧（oversample 后），19 个 h5 文件
+  - 架构：Goal-Conditioned BC，双头（Action Head 3类 + Mouse Head 7-bucket）
+  - 指标：Train Acc 99.94% / Val Acc_A 94.09% / Val Acc_M 93.15%
+  - 过拟合可控（~5% 差距）
+  - 模型：`checkpoints/goal_bc_v55_best_acc_a.pt`（推荐）
 
-### 改进方案
+- **ViGEmBus 手柄方案验证通过**（2026-06-07）
+  - 游戏使用 Raw Input API → pydirectinput / SendInput 无效
+  - 解决方案：ViGEmBus + `vgamepad` 库，模拟 Xbox 360 手柄
+  - 右摇杆控制视角，左摇杆控制移动
+  - 测试脚本：`training/test_bucket_mapping.py`
 
-**已完成**：
-- ✅ 创建 `behavior_clone_v3.py`：数据过滤 + LR 调度 + 鼠标损失加权
-- ✅ 提取共享模型定义到 `models/bc_model.py`
-- ✅ 修复内存泄漏问题（gc.collect + cuda.empty_cache）
-- ✅ 添加详细分析文档 `docs/ANALYSIS.md`
+### ⚠️ 已知问题
 
-**待执行**：
-- 在有游戏环境的机器上运行 v3 训练
-- 推理测试验证效果
-- 如果效果不够，实施 DAgger 在线学习
+1. **goal_id 全部为 0**（录制时未按 G 键切换 goal）
+   - 影响：模型实际是普通 BC，非 Goal-Conditioned
+   - 修复：重新录制时按 G 键切换 goal_id
 
-### 训练进度
-- **v2 模型**: `checkpoints/bc_best.pt`（74.02% 准确率，但效果不佳）
-- **v3 模型**: 待训练（使用数据过滤 + LR 调度）
+2. **双头预测冲突**（Action Head vs Mouse Head）
+   - 修复：推理时统一用 Mouse Head（7-bucket）决定 action
+   - 已在 `inference_goal_v56.py` 中实现
+
+3. **bucket 映射需实测校准**
+   - `BUCKET_STICK = {0:-0.80, 1:-0.50, ..., 6:+0.80}`
+   - 如果方向反转，修改符号
 
 ---
 
 ## 快速开始
 
-### 方案 1：L2 辅助驾驶（推荐）
+### 1. 环境准备
 
-**灵感来源**：自动驾驶 L2 级别的"人机共驾"模式
-
-```bash
-# 1. 立即使用（规则方法，无需训练）
-python assist/quick_start.py
-
-# 2. 采集训练数据
-python assist/data_collector.py --mode dodge --duration 300
-
-# 3. 训练模型
-python assist/train_dodge.py --data "l2_data/dodge_data_*.h5"
-
-# 4. 使用训练好的模型
-python assist/quick_start.py --model checkpoints/auto_dodge_best.pt
+```powershell
+# Python 环境（项目使用 C:\Python\python.exe，3.10.10）
+C:\Python\python.exe -m pip install torch==2.3.1+cu121 -f https://download.pytorch.org/whl/torch_stable.html
+C:\Python\python.exe -m pip install dxcam mss opencv-python pyautogui keyboard vgamepad
 ```
 
-**优势**：
-- 数据需求少（只需特定功能数据）
-- 训练时间短（数小时）
-- 模型轻量（适合 RTX 2060）
-- 可控性高（参数可调）
-- 用户体验好（辅助而非替代）
+**vgamepad 手动安装**（PyPI 无包）：
+1. 下载 `vgamepad-0.0.6.tar.gz`
+2. 解压到 `C:\Python\Lib\site-packages\vgamepad\`
+3. 确认 `win\vigem\client\x64\ViGEmClient.dll` 存在
 
-详见：[docs/L2_ASSIST_GUIDE.md](docs/L2_ASSIST_GUIDE.md)
+**ViGEmBus 驱动**：安装 [Nefarius ViGEmBus](https://github.com/ViGEm/ViGEmBus)
 
 ---
 
-### 方案 2：行为克隆 v3（改进版）
+### 2. 测试手柄映射
 
-```bash
-# 1. 分析数据分布
-python pathfinding/behavior_clone_v3.py --analyze-only
-
-# 2. 训练改进模型
-python pathfinding/behavior_clone_v3.py
-
-# 3. 推理测试
-python pathfinding/inference_v2.py --duration 120 --fps 10
+```powershell
+cd D:\projects\wukong_ai\training
+C:\Python\python.exe test_bucket_mapping.py
 ```
+
+聚焦游戏窗口，观察：
+- bucket 0-2 → 视角左转
+- bucket 3   → 视角不动
+- bucket 4-6 → 视角右转
+
+如果方向反转，修改 `test_bucket_mapping.py` 和 `inference_goal_v56.py` 中的 `BUCKET_STICK` 符号。
 
 ---
 
-### 方案 3：混合模式（BC + L2）
+### 3. 推理运行
 
-```bash
-# 结合 BC 模型（寻路）和 L2 辅助（战斗）
-python assist/integration_example.py --bc-model checkpoints/bc_v3_best.pt
+```powershell
+cd D:\projects\wukong_ai\training
+C:\Python\python.exe inference_goal_v56.py --duration 120
 ```
+
+**参数**：
+- `--model`：模型路径（默认 `checkpoints/goal_bc_v55_best_acc_a.pt`）
+- `--goal-id`：目标 ID（默认 0，当前数据全部为 0）
+- `--duration`：运行时长（秒）
+- `--conf-threshold`：置信度阈值（默认 0.5）
+- `--device`：设备（默认 `cuda:0`）
+
+**推理时**：
+- 左摇杆 Y=1.0 持续前进
+- 右摇杆 X 轴按 bucket 映射转动视角
+- EMA 平滑系数 0.7（避免抖动）
 
 ---
 
-## 完整流程（四步链路）
+## 训练流程
 
 ### 1. 采集数据
 
-录制人类玩家的游戏画面+操作（WASD、J攻击、Space闪避、鼠标转视角等）：
-
 ```powershell
-cd D:\projects\wukong_ai
-
-# 基本录制（5分钟，15fps，ESC停止或到时间自动停）
-C:\Python\python.exe -u training/data_collector.py --duration 300 --fps 15
-
-# 跳过输入测试（已确认环境OK时）
-C:\Python\python.exe -u training/data_collector.py --duration 300 --fps 15 --skip-test
-
-# 带HUD预览（会弹出cv2窗口）
-C:\Python\python.exe -u training/data_collector.py --duration 300 --fps 15 --hud
+cd D:\projects\wukong_ai\training
+C:\Python\python.exe data_collector_v3.py --duration 300 --fps 15
 ```
 
-**参数说明**：
-- `--duration 300`：每个episode最长300秒（5分钟），到时间自动停止
-- `--fps 15`：录制帧率（15fps足够，减少数据量）
-- `--auto-save 3000`：每3000帧自动保存一次（防止kill丢数据）
-- `--skip-test`：跳过输入设备测试（已确认keyboard+mouse就绪时）
-- `--hud`：启用HUD预览窗口（默认关闭）
+**注意**：
+- 按 **G 键**切换 goal_id（会在文件名中记录）
+- 按 **ESC** 停止录制（keyboard 全局 hook）
+- 需要**管理员权限**运行（keyboard 库要求）
 
-**停止方式**：
-- 按 **ESC** 停止（keyboard全局hook，游戏内可靠）
-- 或等到 `--duration` 时间到自动停止
-
-**录制要求**：
-- 至少录制 **5分钟**
-- 覆盖 **多种动作**（WASD移动、J攻击、Space闪避、鼠标转视角）
-- idle占比 **<70%**
-- 鼠标活跃度 **>5%**
-
-**注意**：keyboard库需要**管理员权限**才能全局hook。如果ESC不生效，请用管理员终端运行。
-
-### 2. 预处理数据
-
-将h5原始数据转换为预堆叠npz格式：
+### 2. 过滤数据
 
 ```powershell
-C:\Python\python.exe pathfinding/preprocess_data.py
+C:\Python\python.exe filter_idle.py
 ```
 
-输出：`pathfinding_data/preprocessed/stacked_data.npz`
+过滤掉 `action==0`（idle）的帧，输出到 `pathfinding_data_noidle/`。
 
 ### 3. 训练模型
 
-行为克隆训练（ResNet18编码器 → 分类头 + 回归头）：
-
 ```powershell
-C:\Python\python.exe pathfinding/behavior_clone_v2.py
+cd D:\projects\wukong_ai\training
+C:\Python\python.exe goal_conditioned_bc_v55_optimized.py
 ```
 
-输出：`checkpoints/bc_best.pt`
-
-### 4. 推理测试
-
-实时控制角色：
-
-```powershell
-C:\Python\python.exe pathfinding/inference_v2.py --duration 60 --fps 10
-```
-
-推理时会自动：
-- 检测游戏窗口位置
-- 激活游戏窗口
-- 根据画面输出动作+鼠标移动
+**输出**：
+- `checkpoints/goal_bc_v55_best_loss.pt`
+- `checkpoints/goal_bc_v55_best_acc_a.pt`（推荐）
+- `checkpoints/goal_bc_v55_best_acc_m.pt`
 
 ---
 
-## 质量报告
+## 技术分析文档
 
-采集结束后会自动输出质量报告：
-
-```
-============================================================
-  录制质量报告
-============================================================
-
-  Episode 1: 4500 frames, 300.0s, FPS=15.0
-    动作分布:
-      idle: 1584 (35.2%)
-      forward: 1200 (26.7%)
-      attack: 900 (20.0%)
-      right: 516 (11.5%)
-      dodge: 300 (6.7%)
-    鼠标活跃: 1275/4500 (28.3%)
-
-  ─────────────────────────────────────────
-  总计: 4500 帧, 300.0s (5.0min)
-
-  动作分布（汇总）:
-    idle         1584 ( 35.2%) ██████████████░░░░░░░░░░░░░░░░░░░░
-    forward      1200 ( 26.7%) ██████████░░░░░░░░░░░░░░░░░░░░░░░░░░
-    attack        900 ( 20.0%) ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-    right         516 ( 11.5%) ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-    dodge         300 (  6.7%) ██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-
-  鼠标活跃帧: 1275/4500 (28.3%)
-
-  合格判定:
-    ✅ 数据量: 4500帧
-    ✅ idle占比: 35.2%
-    ✅ 动作多样性: 5种非idle动作
-    ✅ 鼠标活跃度: 28.3%
-
-  🎉 录制质量合格！可以进行预处理和训练。
-
-  下一步:
-    1. 预处理: C:\Python\python.exe pathfinding/preprocess_data.py
-    2. 训练:   C:\Python\python.exe pathfinding/behavior_clone_v2.py
-    3. 推理:   C:\Python\python.exe pathfinding/inference_v2.py --duration 60 --fps 10
-============================================================
-```
-
-**合格标准**：
-- 数据量 ≥ 3000帧
-- idle占比 < 70%
-- 非idle动作 ≥ 3种
-- 鼠标活跃度 > 5%
-
----
-
-## 技术亮点
-
-| 项目 | 实现 |
+| 文档 | 内容 |
 |------|------|
-| 截图 | dxcam (120fps+) / mss / win32 |
-| 动作执行 | pydirectinput (DirectX兼容) |
-| 视觉编码器 | ResNet18 (ImageNet预训练) |
-| 行为克隆 | 分类头(动作) + 回归头(鼠标dx/dy) |
-| 血量检测 | HSV色域分割 |
-| RL算法 | PPO (Actor-Critic) |
+| `docs/TECHNICAL_ANALYSIS.md` | 技术架构分析 |
+| `docs/RESEARCH_BC_FAILURE_ANALYSIS.md` | BC 失败根因分析 |
+| `docs/VLA_Research.md` | VLA 架构调研 |
+| `docs/PATHFINDING_PROBLEM.md` | 寻路问题定义 |
+| `training/TRAINING_REPORT.md` | 训练报告 |
+| `PROJECT_SUMMARY_v55.md` | v5.5 项目总结 |
 
 ---
 
-## 动作空间
+## 关键决策记录
 
-| ID | 动作 | 按键 |
-|----|------|------|
-| 0 | Idle | - |
-| 1 | Attack | J |
-| 2 | Heavy Attack | J×4 |
-| 3 | Dodge | Space |
-| 4 | Move Forward | W |
-| 5 | Move Right | D |
-| 6 | Move Left | A |
-| 7 | Dodge + Attack | Space + J |
-| 8 | Lock On | V |
-| 9 | Heal (Gourd) | R |
+### 为什么不用纯 RL？
+- 样本效率低，训练时间长
+- 黑神话高维视觉输入 + 稀疏奖励，难以收敛
 
----
+### 为什么用 DAgger？
+- 比纯 BC 样本效率高
+- "模型操作 + 人类纠正"覆盖错误状态分布
+- 但干预率 71.5% 偏高，需迭代至 <25%
 
-## 详细分析
+### 为什么用 ViGEmBus？
+- 游戏使用 Raw Input API 读取鼠标
+- pydirectinput / SendInput 只影响 Windows 光标，游戏内无效
+- ViGEmBus 模拟 Xbox 360 手柄，绕过 Raw Input 过滤
 
-### 问题诊断与改进方案
-关于当前方案的问题诊断、替代方案研究（OpenVLA、DAgger、GAIL、Diffusion Policy 等）、以及推荐实施路径，请参考：
-
-**[docs/ANALYSIS.md](docs/ANALYSIS.md)**
-
-### 寻路问题定义
-关于黑神话悟空中如何定义寻路问题、不同视角的讨论（工程、计算机视觉、强化学习、机器人学、游戏 AI）、以及混合方案的设计，请参考：
-
-**[docs/PATHFINDING_PROBLEM.md](docs/PATHFINDING_PROBLEM.md)**
-
-**[docs/DEBATE_PATHFINDING.md](docs/DEBATE_PATHFINDING.md)**
+### 为什么用双头模型？
+- Action Head（3类）：forward / turn_left / turn_right
+- Mouse Head（7-bucket）：更精细的转向控制
+- 推理时统一用 Mouse Head 决定 action，避免双头冲突
 
 ---
 
-## License
+## 硬件要求
+
+| 组件 | 最低要求 | 推荐 |
+|------|----------|------|
+| GPU | RTX 2060 6GB | RTX 3060 12GB+ |
+| RAM | 16GB | 32GB |
+| 存储 | 10GB | 50GB SSD |
+
+**注意**：训练时系统内存占用 ~4.5GB（预加载数据到内存），GPU 显存占用 ~2GB。
+
+---
+
+## 许可证
 
 MIT
+
+---
+
+## 贡献
+
+欢迎提交 Issue / PR！
+
+**待改进**：
+- [ ] 重新录制带 goal_id 的数据
+- [ ] 实测校准 bucket → 右摇杆映射
+- [ ] DAgger 迭代降低干预率
+- [ ] 引入 LSTM 处理时序依赖
+- [ ] 奖励函数设计（RL 方案）
+
+---
+
+**项目仓库**：https://github.com/Gravo/wukong_ai
