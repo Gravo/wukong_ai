@@ -1,0 +1,411 @@
+{
+  "source_dir": "pathfinding_data_balanced",
+  "created_at": "2026-06-07 13:20:27",
+  "frame_stack": [
+    0,
+    1,
+    3,
+    7
+  ],
+  "summary": {
+    "accepted_files": 14,
+    "rejected_files": 0,
+    "accepted_frames": 8602,
+    "usable_samples": 8490,
+    "mouse_active_frames": 6643,
+    "mouse_active_pct": 77.22622645896303,
+    "mouse_bucket_counts": {
+      "0": 140,
+      "1": 490,
+      "2": 1986,
+      "3": 3263,
+      "4": 2041,
+      "5": 410,
+      "6": 160
+    },
+    "goal_file_presence": {
+      "0": 9,
+      "1": 5
+    },
+    "rejection_reasons": {}
+  },
+  "accepted_files": [
+    "pathfinding_data_balanced\\pathfinding_ep1_1779502795.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779504094.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779504152.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779541581.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779542313.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779542844.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779542998.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779543707.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779577445.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779577549.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779577626.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779578190.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779578258.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779578325.h5"
+  ],
+  "files": [
+    {
+      "path": "pathfinding_data_balanced\\pathfinding_ep1_1779502795.h5",
+      "file_name": "pathfinding_ep1_1779502795.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 694,
+      "usable_samples": 686,
+      "mouse_active_frames": 613,
+      "mouse_active_pct": 88.32853025936599,
+      "goal_ids": [
+        0
+      ],
+      "recorded_actions": {
+        "4": 667,
+        "5": 27
+      },
+      "mouse_buckets": {
+        "0": 10,
+        "1": 50,
+        "2": 215,
+        "3": 171,
+        "4": 205,
+        "5": 25,
+        "6": 10
+      }
+    },
+    {
+      "path": "pathfinding_data_balanced\\pathfinding_ep1_1779504094.h5",
+      "file_name": "pathfinding_ep1_1779504094.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 397,
+      "usable_samples": 389,
+      "mouse_active_frames": 117,
+      "mouse_active_pct": 29.47103274559194,
+      "goal_ids": [
+        0
+      ],
+      "recorded_actions": {
+        "4": 318,
+        "5": 43,
+        "6": 36
+      },
+      "mouse_buckets": {
+        "1": 25,
+        "2": 50,
+        "3": 294,
+        "4": 20
+      }
+    },
+    {
+      "path": "pathfinding_data_balanced\\pathfinding_ep1_1779504152.h5",
+      "file_name": "pathfinding_ep1_1779504152.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 522,
+      "usable_samples": 514,
+      "mouse_active_frames": 333,
+      "mouse_active_pct": 63.793103448275865,
+      "goal_ids": [
+        0
+      ],
+      "recorded_actions": {
+        "4": 516,
+        "6": 6
+      },
+      "mouse_buckets": {
+        "1": 5,
+        "2": 135,
+        "3": 274,
+        "4": 75,
+        "5": 20,
+        "6": 5
+      }
+    },
+    {
+      "path": "pathfinding_data_balanced\\pathfinding_ep1_1779541581.h5",
+      "file_name": "pathfinding_ep1_1779541581.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 373,
+      "usable_samples": 365,
+      "mouse_active_frames": 181,
+      "mouse_active_pct": 48.525469168900806,
+      "goal_ids": [
+        1
+      ],
+      "recorded_actions": {
+        "4": 341,
+        "5": 10,
+        "6": 22
+      },
+      "mouse_buckets": {
+        "2": 20,
+        "3": 255,
+        "4": 85,
+        "5": 5
+      }
+    },
+    {
+      "path": "pathfinding_data_balanced\\pathfinding_ep1_1779542313.h5",
+      "file_name": "pathfinding_ep1_1779542313.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 662,
+      "usable_samples": 654,
+      "mouse_active_frames": 575,
+      "mouse_active_pct": 86.85800604229608,
+      "goal_ids": [
+        1
+      ],
+      "recorded_actions": {
+        "4": 637,
+        "6": 25
+      },
+      "mouse_buckets": {
+        "1": 40,
+        "2": 110,
+        "3": 199,
+        "4": 275,
+        "5": 25,
+        "6": 5
+      }
+    },
+    {
+      "path": "pathfinding_data_balanced\\pathfinding_ep1_1779542844.h5",
+      "file_name": "pathfinding_ep1_1779542844.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 512,
+      "usable_samples": 504,
+      "mouse_active_frames": 408,
+      "mouse_active_pct": 79.6875,
+      "goal_ids": [
+        1
+      ],
+      "recorded_actions": {
+        "4": 440,
+        "5": 9,
+        "6": 63
+      },
+      "mouse_buckets": {
+        "0": 20,
+        "1": 30,
+        "2": 92,
+        "3": 202,
+        "4": 125,
+        "5": 20,
+        "6": 15
+      }
+    },
+    {
+      "path": "pathfinding_data_balanced\\pathfinding_ep1_1779542998.h5",
+      "file_name": "pathfinding_ep1_1779542998.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 603,
+      "usable_samples": 595,
+      "mouse_active_frames": 521,
+      "mouse_active_pct": 86.40132669983416,
+      "goal_ids": [
+        1
+      ],
+      "recorded_actions": {
+        "4": 539,
+        "5": 13,
+        "6": 51
+      },
+      "mouse_buckets": {
+        "1": 25,
+        "2": 130,
+        "3": 194,
+        "4": 221,
+        "5": 25
+      }
+    },
+    {
+      "path": "pathfinding_data_balanced\\pathfinding_ep1_1779543707.h5",
+      "file_name": "pathfinding_ep1_1779543707.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 537,
+      "usable_samples": 529,
+      "mouse_active_frames": 435,
+      "mouse_active_pct": 81.00558659217877,
+      "goal_ids": [
+        1
+      ],
+      "recorded_actions": {
+        "4": 534,
+        "5": 3
+      },
+      "mouse_buckets": {
+        "1": 15,
+        "2": 173,
+        "3": 201,
+        "4": 120,
+        "5": 20
+      }
+    },
+    {
+      "path": "pathfinding_data_balanced\\pathfinding_ep1_1779577445.h5",
+      "file_name": "pathfinding_ep1_1779577445.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 722,
+      "usable_samples": 714,
+      "mouse_active_frames": 631,
+      "mouse_active_pct": 87.3961218836565,
+      "goal_ids": [
+        0
+      ],
+      "recorded_actions": {
+        "4": 670,
+        "5": 41,
+        "6": 11
+      },
+      "mouse_buckets": {
+        "0": 10,
+        "1": 65,
+        "2": 235,
+        "3": 189,
+        "4": 175,
+        "5": 20,
+        "6": 20
+      }
+    },
+    {
+      "path": "pathfinding_data_balanced\\pathfinding_ep1_1779577549.h5",
+      "file_name": "pathfinding_ep1_1779577549.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 792,
+      "usable_samples": 784,
+      "mouse_active_frames": 702,
+      "mouse_active_pct": 88.63636363636364,
+      "goal_ids": [
+        0
+      ],
+      "recorded_actions": {
+        "4": 781,
+        "5": 11
+      },
+      "mouse_buckets": {
+        "0": 5,
+        "1": 55,
+        "2": 220,
+        "3": 184,
+        "4": 235,
+        "5": 70,
+        "6": 15
+      }
+    },
+    {
+      "path": "pathfinding_data_balanced\\pathfinding_ep1_1779577626.h5",
+      "file_name": "pathfinding_ep1_1779577626.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 758,
+      "usable_samples": 750,
+      "mouse_active_frames": 649,
+      "mouse_active_pct": 85.62005277044855,
+      "goal_ids": [
+        0
+      ],
+      "recorded_actions": {
+        "4": 697,
+        "5": 46,
+        "6": 15
+      },
+      "mouse_buckets": {
+        "0": 25,
+        "1": 80,
+        "2": 183,
+        "3": 212,
+        "4": 155,
+        "5": 75,
+        "6": 20
+      }
+    },
+    {
+      "path": "pathfinding_data_balanced\\pathfinding_ep1_1779578190.h5",
+      "file_name": "pathfinding_ep1_1779578190.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 701,
+      "usable_samples": 693,
+      "mouse_active_frames": 507,
+      "mouse_active_pct": 72.32524964336662,
+      "goal_ids": [
+        0
+      ],
+      "recorded_actions": {
+        "4": 625,
+        "5": 67,
+        "6": 9
+      },
+      "mouse_buckets": {
+        "0": 30,
+        "1": 15,
+        "2": 151,
+        "3": 292,
+        "4": 155,
+        "5": 25,
+        "6": 25
+      }
+    },
+    {
+      "path": "pathfinding_data_balanced\\pathfinding_ep1_1779578258.h5",
+      "file_name": "pathfinding_ep1_1779578258.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 780,
+      "usable_samples": 772,
+      "mouse_active_frames": 602,
+      "mouse_active_pct": 77.17948717948718,
+      "goal_ids": [
+        0
+      ],
+      "recorded_actions": {
+        "4": 760,
+        "5": 10,
+        "6": 10
+      },
+      "mouse_buckets": {
+        "0": 30,
+        "1": 60,
+        "2": 180,
+        "3": 297,
+        "4": 115,
+        "5": 60,
+        "6": 30
+      }
+    },
+    {
+      "path": "pathfinding_data_balanced\\pathfinding_ep1_1779578325.h5",
+      "file_name": "pathfinding_ep1_1779578325.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 549,
+      "usable_samples": 541,
+      "mouse_active_frames": 369,
+      "mouse_active_pct": 67.21311475409836,
+      "goal_ids": [
+        0
+      ],
+      "recorded_actions": {
+        "4": 523,
+        "5": 23,
+        "6": 3
+      },
+      "mouse_buckets": {
+        "0": 10,
+        "1": 25,
+        "2": 92,
+        "3": 299,
+        "4": 80,
+        "5": 20,
+        "6": 15
+      }
+    }
+  ]
+}

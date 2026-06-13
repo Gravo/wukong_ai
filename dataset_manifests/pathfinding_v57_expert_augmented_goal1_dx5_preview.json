@@ -1,0 +1,321 @@
+{
+  "source": "v57_expert_augmented",
+  "created_at": "2026-06-10 08:01:08",
+  "base_manifest": "dataset_manifests\\pathfinding_balanced_curated_v1_after_apply.json",
+  "expert_source_dir": "pathfinding_data_v57_expert",
+  "expert_prepared_dir": "pathfinding_data_v57_expert_goal1_dx5_preview",
+  "forced_expert_goal_id": 1,
+  "expert_mouse_dx_scale": 5.0,
+  "frame_stack": [
+    -7,
+    -3,
+    -1,
+    0
+  ],
+  "summary": {
+    "expert_accepted_files": 10,
+    "expert_rejected_files": 1,
+    "expert_frames": 3357,
+    "expert_usable_samples": 3287,
+    "expert_mouse_active_pct": 28.77569258266309,
+    "expert_forward_pct": 90.0804289544236,
+    "expert_action_labels_from_dx": {
+      "0": 2596,
+      "1": 360,
+      "2": 331
+    },
+    "expert_mouse_buckets": {
+      "0": 109,
+      "1": 98,
+      "2": 170,
+      "3": 2579,
+      "4": 151,
+      "5": 78,
+      "6": 102
+    },
+    "merged_accepted_files": 24,
+    "rejection_reasons": {
+      "too_short": 1
+    }
+  },
+  "accepted_files": [
+    "pathfinding_data_balanced\\pathfinding_ep1_1779502795.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779504094.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779504152.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779541581.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779542313.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779542844.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779542998.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779543707.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779577445.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779577549.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779577626.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779578190.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779578258.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779578325.h5",
+    "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781016931_goal1.h5",
+    "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781017131_goal1.h5",
+    "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781017213_goal1.h5",
+    "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781017275_goal1.h5",
+    "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781017488_goal1.h5",
+    "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781017549_goal1.h5",
+    "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781017607_goal1.h5",
+    "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781017661_goal1.h5",
+    "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781017710_goal1.h5",
+    "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781017768_goal1.h5"
+  ],
+  "expert_files": [
+    {
+      "source": "pathfinding_data_v57_expert\\pathfinding_ep1_1781016931.h5",
+      "prepared": "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781016931_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 377,
+      "usable_samples": 370,
+      "mouse_active_pct": 40.318302387267906,
+      "forward_pct": 68.43501326259947,
+      "action_labels": {
+        "0": 296,
+        "1": 47,
+        "2": 27
+      },
+      "mouse_buckets": {
+        "0": 16,
+        "1": 13,
+        "2": 21,
+        "3": 293,
+        "4": 13,
+        "5": 9,
+        "6": 5
+      }
+    },
+    {
+      "source": "pathfinding_data_v57_expert\\pathfinding_ep1_1781017131.h5",
+      "prepared": "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781017131_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 279,
+      "usable_samples": 272,
+      "mouse_active_pct": 34.05017921146953,
+      "forward_pct": 87.81362007168458,
+      "action_labels": {
+        "0": 224,
+        "1": 37,
+        "2": 11
+      },
+      "mouse_buckets": {
+        "0": 10,
+        "1": 10,
+        "2": 19,
+        "3": 222,
+        "4": 8,
+        "5": 2,
+        "6": 1
+      }
+    },
+    {
+      "source": "pathfinding_data_v57_expert\\pathfinding_ep1_1781017213.h5",
+      "prepared": "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781017213_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 313,
+      "usable_samples": 306,
+      "mouse_active_pct": 32.9073482428115,
+      "forward_pct": 90.73482428115017,
+      "action_labels": {
+        "0": 223,
+        "1": 44,
+        "2": 39
+      },
+      "mouse_buckets": {
+        "0": 10,
+        "1": 10,
+        "2": 26,
+        "3": 221,
+        "4": 23,
+        "5": 7,
+        "6": 9
+      }
+    },
+    {
+      "source": "pathfinding_data_v57_expert\\pathfinding_ep1_1781017275.h5",
+      "prepared": "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781017275_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 377,
+      "usable_samples": 370,
+      "mouse_active_pct": 44.56233421750663,
+      "forward_pct": 93.36870026525199,
+      "action_labels": {
+        "0": 245,
+        "1": 37,
+        "2": 88
+      },
+      "mouse_buckets": {
+        "0": 14,
+        "1": 9,
+        "2": 18,
+        "3": 241,
+        "4": 44,
+        "5": 25,
+        "6": 19
+      }
+    },
+    {
+      "source": "pathfinding_data_v57_expert\\pathfinding_ep1_1781017488.h5",
+      "prepared": "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781017488_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 285,
+      "usable_samples": 278,
+      "mouse_active_pct": 22.105263157894736,
+      "forward_pct": 96.84210526315789,
+      "action_labels": {
+        "0": 231,
+        "1": 30,
+        "2": 17
+      },
+      "mouse_buckets": {
+        "0": 8,
+        "1": 8,
+        "2": 15,
+        "3": 230,
+        "4": 10,
+        "5": 2,
+        "6": 5
+      }
+    },
+    {
+      "source": "pathfinding_data_v57_expert\\pathfinding_ep1_1781017507.h5",
+      "prepared": null,
+      "accepted": false,
+      "reason": "too_short",
+      "frames": 18,
+      "usable_samples": 11,
+      "mouse_active_pct": 0.0,
+      "forward_pct": 0.0,
+      "action_labels": null,
+      "mouse_buckets": null
+    },
+    {
+      "source": "pathfinding_data_v57_expert\\pathfinding_ep1_1781017549.h5",
+      "prepared": "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781017549_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 319,
+      "usable_samples": 312,
+      "mouse_active_pct": 21.316614420062695,
+      "forward_pct": 92.47648902821317,
+      "action_labels": {
+        "0": 254,
+        "1": 33,
+        "2": 25
+      },
+      "mouse_buckets": {
+        "0": 8,
+        "1": 11,
+        "2": 14,
+        "3": 254,
+        "4": 14,
+        "5": 6,
+        "6": 5
+      }
+    },
+    {
+      "source": "pathfinding_data_v57_expert\\pathfinding_ep1_1781017607.h5",
+      "prepared": "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781017607_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 375,
+      "usable_samples": 368,
+      "mouse_active_pct": 21.6,
+      "forward_pct": 92.0,
+      "action_labels": {
+        "0": 297,
+        "1": 38,
+        "2": 33
+      },
+      "mouse_buckets": {
+        "0": 13,
+        "1": 11,
+        "2": 16,
+        "3": 295,
+        "4": 10,
+        "5": 7,
+        "6": 16
+      }
+    },
+    {
+      "source": "pathfinding_data_v57_expert\\pathfinding_ep1_1781017661.h5",
+      "prepared": "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781017661_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 298,
+      "usable_samples": 291,
+      "mouse_active_pct": 13.087248322147651,
+      "forward_pct": 96.97986577181209,
+      "action_labels": {
+        "0": 260,
+        "1": 18,
+        "2": 13
+      },
+      "mouse_buckets": {
+        "0": 7,
+        "1": 5,
+        "2": 6,
+        "3": 260,
+        "4": 5,
+        "5": 5,
+        "6": 3
+      }
+    },
+    {
+      "source": "pathfinding_data_v57_expert\\pathfinding_ep1_1781017710.h5",
+      "prepared": "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781017710_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 377,
+      "usable_samples": 370,
+      "mouse_active_pct": 25.46419098143236,
+      "forward_pct": 89.12466843501326,
+      "action_labels": {
+        "0": 292,
+        "1": 46,
+        "2": 32
+      },
+      "mouse_buckets": {
+        "0": 12,
+        "1": 14,
+        "2": 23,
+        "3": 289,
+        "4": 9,
+        "5": 6,
+        "6": 17
+      }
+    },
+    {
+      "source": "pathfinding_data_v57_expert\\pathfinding_ep1_1781017768.h5",
+      "prepared": "pathfinding_data_v57_expert_goal1_dx5_preview\\pathfinding_ep1_1781017768_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 357,
+      "usable_samples": 350,
+      "mouse_active_pct": 28.291316526610643,
+      "forward_pct": 96.35854341736695,
+      "action_labels": {
+        "0": 274,
+        "1": 30,
+        "2": 46
+      },
+      "mouse_buckets": {
+        "0": 11,
+        "1": 7,
+        "2": 12,
+        "3": 274,
+        "4": 15,
+        "5": 9,
+        "6": 22
+      }
+    }
+  ]
+}

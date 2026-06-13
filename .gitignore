@@ -29,6 +29,8 @@ runs/
 logs/
 logs_gpu/
 logs_images/
+telemetry/
+feature_cache/
 utils/logs/
 utils/screenshots/
 

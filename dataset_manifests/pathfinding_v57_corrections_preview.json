@@ -1,0 +1,229 @@
+{
+  "source": "v57_expert_augmented",
+  "created_at": "2026-06-11 06:26:25",
+  "base_manifest": "dataset_manifests\\pathfinding_balanced_curated_v1_after_apply.json",
+  "expert_source_dir": "pathfinding_data_v57_corrections",
+  "expert_prepared_dir": "pathfinding_data_v57_corrections_goal1_preview",
+  "forced_expert_goal_id": 1,
+  "expert_mouse_dx_scale": 1.0,
+  "frame_stack": [
+    -7,
+    -3,
+    -1,
+    0
+  ],
+  "summary": {
+    "expert_accepted_files": 8,
+    "expert_rejected_files": 1,
+    "expert_frames": 421,
+    "expert_usable_samples": 365,
+    "expert_mouse_active_pct": 42.99287410926366,
+    "expert_forward_pct": 61.52019002375297,
+    "expert_action_labels_from_dx": {
+      "0": 305,
+      "1": 25,
+      "2": 35
+    },
+    "expert_mouse_buckets": {
+      "0": 1,
+      "1": 3,
+      "2": 21,
+      "3": 305,
+      "4": 29,
+      "5": 5,
+      "6": 1
+    },
+    "merged_accepted_files": 22,
+    "rejection_reasons": {
+      "too_short": 1
+    }
+  },
+  "accepted_files": [
+    "pathfinding_data_balanced\\pathfinding_ep1_1779502795.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779504094.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779504152.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779541581.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779542313.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779542844.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779542998.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779543707.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779577445.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779577549.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779577626.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779578190.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779578258.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779578325.h5",
+    "pathfinding_data_v57_corrections_goal1_preview\\pathfinding_ep1_1781130092_goal1.h5",
+    "pathfinding_data_v57_corrections_goal1_preview\\pathfinding_ep1_1781130139_goal1.h5",
+    "pathfinding_data_v57_corrections_goal1_preview\\pathfinding_ep1_1781130175_goal1.h5",
+    "pathfinding_data_v57_corrections_goal1_preview\\pathfinding_ep1_1781130235_goal1.h5",
+    "pathfinding_data_v57_corrections_goal1_preview\\pathfinding_ep1_1781130258_goal1.h5",
+    "pathfinding_data_v57_corrections_goal1_preview\\pathfinding_ep1_1781130282_goal1.h5",
+    "pathfinding_data_v57_corrections_goal1_preview\\pathfinding_ep1_1781130306_goal1.h5",
+    "pathfinding_data_v57_corrections_goal1_preview\\pathfinding_ep1_1781130331_goal1.h5"
+  ],
+  "expert_files": [
+    {
+      "source": "pathfinding_data_v57_corrections\\pathfinding_ep1_1781130049.h5",
+      "prepared": null,
+      "accepted": false,
+      "reason": "too_short",
+      "frames": 12,
+      "usable_samples": 5,
+      "mouse_active_pct": 0.0,
+      "forward_pct": 0.0,
+      "action_labels": null,
+      "mouse_buckets": null
+    },
+    {
+      "source": "pathfinding_data_v57_corrections\\pathfinding_ep1_1781130092.h5",
+      "prepared": "pathfinding_data_v57_corrections_goal1_preview\\pathfinding_ep1_1781130092_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 58,
+      "usable_samples": 51,
+      "mouse_active_pct": 44.827586206896555,
+      "forward_pct": 91.37931034482759,
+      "action_labels": {
+        "0": 45,
+        "2": 6
+      },
+      "mouse_buckets": {
+        "3": 45,
+        "4": 6
+      }
+    },
+    {
+      "source": "pathfinding_data_v57_corrections\\pathfinding_ep1_1781130139.h5",
+      "prepared": "pathfinding_data_v57_corrections_goal1_preview\\pathfinding_ep1_1781130139_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 62,
+      "usable_samples": 55,
+      "mouse_active_pct": 46.774193548387096,
+      "forward_pct": 93.54838709677419,
+      "action_labels": {
+        "0": 42,
+        "1": 7,
+        "2": 6
+      },
+      "mouse_buckets": {
+        "2": 7,
+        "3": 42,
+        "4": 6
+      }
+    },
+    {
+      "source": "pathfinding_data_v57_corrections\\pathfinding_ep1_1781130175.h5",
+      "prepared": "pathfinding_data_v57_corrections_goal1_preview\\pathfinding_ep1_1781130175_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 56,
+      "usable_samples": 49,
+      "mouse_active_pct": 33.92857142857143,
+      "forward_pct": 57.14285714285714,
+      "action_labels": {
+        "0": 40,
+        "1": 9
+      },
+      "mouse_buckets": {
+        "1": 3,
+        "2": 6,
+        "3": 40
+      }
+    },
+    {
+      "source": "pathfinding_data_v57_corrections\\pathfinding_ep1_1781130235.h5",
+      "prepared": "pathfinding_data_v57_corrections_goal1_preview\\pathfinding_ep1_1781130235_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 80,
+      "usable_samples": 73,
+      "mouse_active_pct": 45.0,
+      "forward_pct": 42.5,
+      "action_labels": {
+        "0": 64,
+        "1": 9
+      },
+      "mouse_buckets": {
+        "0": 1,
+        "2": 8,
+        "3": 64
+      }
+    },
+    {
+      "source": "pathfinding_data_v57_corrections\\pathfinding_ep1_1781130258.h5",
+      "prepared": "pathfinding_data_v57_corrections_goal1_preview\\pathfinding_ep1_1781130258_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 44,
+      "usable_samples": 37,
+      "mouse_active_pct": 31.818181818181817,
+      "forward_pct": 63.63636363636363,
+      "action_labels": {
+        "0": 37
+      },
+      "mouse_buckets": {
+        "3": 37
+      }
+    },
+    {
+      "source": "pathfinding_data_v57_corrections\\pathfinding_ep1_1781130282.h5",
+      "prepared": "pathfinding_data_v57_corrections_goal1_preview\\pathfinding_ep1_1781130282_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 43,
+      "usable_samples": 36,
+      "mouse_active_pct": 65.11627906976744,
+      "forward_pct": 30.23255813953488,
+      "action_labels": {
+        "0": 31,
+        "2": 5
+      },
+      "mouse_buckets": {
+        "3": 31,
+        "4": 4,
+        "5": 1
+      }
+    },
+    {
+      "source": "pathfinding_data_v57_corrections\\pathfinding_ep1_1781130306.h5",
+      "prepared": "pathfinding_data_v57_corrections_goal1_preview\\pathfinding_ep1_1781130306_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 35,
+      "usable_samples": 28,
+      "mouse_active_pct": 34.285714285714285,
+      "forward_pct": 57.14285714285714,
+      "action_labels": {
+        "0": 20,
+        "2": 8
+      },
+      "mouse_buckets": {
+        "3": 20,
+        "4": 6,
+        "5": 2
+      }
+    },
+    {
+      "source": "pathfinding_data_v57_corrections\\pathfinding_ep1_1781130331.h5",
+      "prepared": "pathfinding_data_v57_corrections_goal1_preview\\pathfinding_ep1_1781130331_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 43,
+      "usable_samples": 36,
+      "mouse_active_pct": 39.53488372093023,
+      "forward_pct": 48.837209302325576,
+      "action_labels": {
+        "0": 26,
+        "2": 10
+      },
+      "mouse_buckets": {
+        "3": 26,
+        "4": 7,
+        "5": 2,
+        "6": 1
+      }
+    }
+  ]
+}

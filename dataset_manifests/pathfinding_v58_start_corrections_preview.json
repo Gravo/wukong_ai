@@ -1,0 +1,181 @@
+{
+  "source": "v57_expert_augmented",
+  "created_at": "2026-06-11 08:06:08",
+  "base_manifest": "dataset_manifests\\pathfinding_v58_expert_plus_corrections_dx3.json",
+  "expert_source_dir": "pathfinding_data_v58_start_corrections",
+  "expert_prepared_dir": "pathfinding_data_v58_start_corrections_goal1_preview",
+  "forced_expert_goal_id": 1,
+  "expert_mouse_dx_scale": 1.0,
+  "frame_stack": [
+    -7,
+    -3,
+    -1,
+    0
+  ],
+  "summary": {
+    "expert_accepted_files": 4,
+    "expert_rejected_files": 1,
+    "expert_frames": 173,
+    "expert_usable_samples": 145,
+    "expert_mouse_active_pct": 53.179190751445084,
+    "expert_forward_pct": 55.49132947976879,
+    "expert_action_labels_from_dx": {
+      "0": 94,
+      "1": 37,
+      "2": 14
+    },
+    "expert_mouse_buckets": {
+      "0": 7,
+      "1": 5,
+      "2": 25,
+      "3": 94,
+      "4": 11,
+      "5": 1,
+      "6": 2
+    },
+    "merged_accepted_files": 36,
+    "rejection_reasons": {
+      "low_mouse_active": 1
+    }
+  },
+  "accepted_files": [
+    "pathfinding_data_balanced\\pathfinding_ep1_1779502795.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779504094.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779504152.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779541581.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779542313.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779542844.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779542998.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779543707.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779577445.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779577549.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779577626.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779578190.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779578258.h5",
+    "pathfinding_data_balanced\\pathfinding_ep1_1779578325.h5",
+    "pathfinding_data_v57_expert_goal1\\pathfinding_ep1_1781016931_goal1.h5",
+    "pathfinding_data_v57_expert_goal1\\pathfinding_ep1_1781017131_goal1.h5",
+    "pathfinding_data_v57_expert_goal1\\pathfinding_ep1_1781017213_goal1.h5",
+    "pathfinding_data_v57_expert_goal1\\pathfinding_ep1_1781017275_goal1.h5",
+    "pathfinding_data_v57_expert_goal1\\pathfinding_ep1_1781017488_goal1.h5",
+    "pathfinding_data_v57_expert_goal1\\pathfinding_ep1_1781017549_goal1.h5",
+    "pathfinding_data_v57_expert_goal1\\pathfinding_ep1_1781017607_goal1.h5",
+    "pathfinding_data_v57_expert_goal1\\pathfinding_ep1_1781017661_goal1.h5",
+    "pathfinding_data_v57_expert_goal1\\pathfinding_ep1_1781017710_goal1.h5",
+    "pathfinding_data_v57_expert_goal1\\pathfinding_ep1_1781017768_goal1.h5",
+    "pathfinding_data_v57_corrections_goal1_dx3\\pathfinding_ep1_1781130092_goal1.h5",
+    "pathfinding_data_v57_corrections_goal1_dx3\\pathfinding_ep1_1781130139_goal1.h5",
+    "pathfinding_data_v57_corrections_goal1_dx3\\pathfinding_ep1_1781130175_goal1.h5",
+    "pathfinding_data_v57_corrections_goal1_dx3\\pathfinding_ep1_1781130235_goal1.h5",
+    "pathfinding_data_v57_corrections_goal1_dx3\\pathfinding_ep1_1781130258_goal1.h5",
+    "pathfinding_data_v57_corrections_goal1_dx3\\pathfinding_ep1_1781130282_goal1.h5",
+    "pathfinding_data_v57_corrections_goal1_dx3\\pathfinding_ep1_1781130306_goal1.h5",
+    "pathfinding_data_v57_corrections_goal1_dx3\\pathfinding_ep1_1781130331_goal1.h5",
+    "pathfinding_data_v58_start_corrections_goal1_preview\\pathfinding_ep1_1781136195_goal1.h5",
+    "pathfinding_data_v58_start_corrections_goal1_preview\\pathfinding_ep1_1781136264_goal1.h5",
+    "pathfinding_data_v58_start_corrections_goal1_preview\\pathfinding_ep1_1781136289_goal1.h5",
+    "pathfinding_data_v58_start_corrections_goal1_preview\\pathfinding_ep1_1781136311_goal1.h5"
+  ],
+  "expert_files": [
+    {
+      "source": "pathfinding_data_v58_start_corrections\\pathfinding_ep1_1781136195.h5",
+      "prepared": "pathfinding_data_v58_start_corrections_goal1_preview\\pathfinding_ep1_1781136195_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 46,
+      "usable_samples": 39,
+      "mouse_active_pct": 58.69565217391305,
+      "forward_pct": 63.04347826086957,
+      "action_labels": {
+        "0": 23,
+        "1": 10,
+        "2": 6
+      },
+      "mouse_buckets": {
+        "0": 2,
+        "1": 1,
+        "2": 7,
+        "3": 23,
+        "4": 5,
+        "6": 1
+      }
+    },
+    {
+      "source": "pathfinding_data_v58_start_corrections\\pathfinding_ep1_1781136233.h5",
+      "prepared": null,
+      "accepted": false,
+      "reason": "low_mouse_active",
+      "frames": 103,
+      "usable_samples": 96,
+      "mouse_active_pct": 0.0,
+      "forward_pct": 0.0,
+      "action_labels": null,
+      "mouse_buckets": null
+    },
+    {
+      "source": "pathfinding_data_v58_start_corrections\\pathfinding_ep1_1781136264.h5",
+      "prepared": "pathfinding_data_v58_start_corrections_goal1_preview\\pathfinding_ep1_1781136264_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 52,
+      "usable_samples": 45,
+      "mouse_active_pct": 53.84615384615385,
+      "forward_pct": 42.30769230769231,
+      "action_labels": {
+        "0": 30,
+        "1": 10,
+        "2": 5
+      },
+      "mouse_buckets": {
+        "0": 2,
+        "1": 2,
+        "2": 6,
+        "3": 30,
+        "4": 3,
+        "5": 1,
+        "6": 1
+      }
+    },
+    {
+      "source": "pathfinding_data_v58_start_corrections\\pathfinding_ep1_1781136289.h5",
+      "prepared": "pathfinding_data_v58_start_corrections_goal1_preview\\pathfinding_ep1_1781136289_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 31,
+      "usable_samples": 24,
+      "mouse_active_pct": 48.38709677419355,
+      "forward_pct": 58.06451612903226,
+      "action_labels": {
+        "0": 15,
+        "1": 9
+      },
+      "mouse_buckets": {
+        "0": 1,
+        "2": 8,
+        "3": 15
+      }
+    },
+    {
+      "source": "pathfinding_data_v58_start_corrections\\pathfinding_ep1_1781136311.h5",
+      "prepared": "pathfinding_data_v58_start_corrections_goal1_preview\\pathfinding_ep1_1781136311_goal1.h5",
+      "accepted": true,
+      "reason": "accepted",
+      "frames": 44,
+      "usable_samples": 37,
+      "mouse_active_pct": 50.0,
+      "forward_pct": 61.36363636363637,
+      "action_labels": {
+        "0": 26,
+        "1": 8,
+        "2": 3
+      },
+      "mouse_buckets": {
+        "0": 2,
+        "1": 2,
+        "2": 4,
+        "3": 26,
+        "4": 3
+      }
+    }
+  ]
+}
