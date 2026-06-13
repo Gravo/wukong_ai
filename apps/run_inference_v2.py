@@ -31,6 +31,11 @@ def main():
     parser.add_argument("--gate-forward-threshold", type=float, default=0.35)
     parser.add_argument("--gate-turn-dx", type=int, default=100)
     parser.add_argument("--gate-turn-hold-frames", type=int, default=4)
+    parser.add_argument("--lcc-model", default=None, help="Optional LCC checkpoint for local correction fusion")
+    parser.add_argument("--lcc-policy", choices=["v56-history", "v58-temporal"], default="v56-history")
+    parser.add_argument("--lcc-command-id", type=int, default=0)
+    parser.add_argument("--lcc-threshold", type=float, default=0.55)
+    parser.add_argument("--lcc-override-frames", type=int, default=4)
     parser.add_argument(
         "--no-always-forward",
         action="store_true",
@@ -58,6 +63,11 @@ def main():
         gate_forward_threshold=args.gate_forward_threshold,
         gate_turn_dx=args.gate_turn_dx,
         gate_turn_hold_frames=args.gate_turn_hold_frames,
+        lcc_model_path=Path(args.lcc_model) if args.lcc_model else None,
+        lcc_policy=args.lcc_policy,
+        lcc_command_id=args.lcc_command_id,
+        lcc_threshold=args.lcc_threshold,
+        lcc_override_frames=args.lcc_override_frames,
     )
 
     registry = ExperimentRegistry(config.registry_path) if config.registry_path else None

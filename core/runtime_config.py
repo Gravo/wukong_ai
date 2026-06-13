@@ -27,3 +27,8 @@ class AgentRuntimeConfig:
     gate_forward_threshold: float = 0.35
     gate_turn_dx: int = 100
     gate_turn_hold_frames: int = 4
+    lcc_model_path: Optional[Path] = None
+    lcc_policy: str = "v56-history"
+    lcc_command_id: int = 0
+    lcc_threshold: float = 0.55
+    lcc_override_frames: int = 4

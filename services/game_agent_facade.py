@@ -47,6 +47,8 @@ class GameAgentFacade:
                     "reason",
                     "gate_mode",
                     "gate_threshold",
+                    "policy_source",
+                    "policy_detail",
                 ]
             )
 
@@ -92,6 +94,8 @@ class GameAgentFacade:
                                 skip_reason,
                                 gate_mode,
                                 f"{gate_threshold:.4f}",
+                                prediction.policy_source,
+                                prediction.policy_detail,
                             ]
                         )
                     time.sleep(self.step_delay)
@@ -116,6 +120,8 @@ class GameAgentFacade:
                             "",
                             gate_mode,
                             f"{gate_threshold:.4f}",
+                            prediction.policy_source,
+                            prediction.policy_detail,
                         ]
                     )
 

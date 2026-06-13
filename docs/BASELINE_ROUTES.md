@@ -57,6 +57,94 @@ Expected cost:
 
 This should become the base skill that a goal-conditioned route policy builds on.
 
+## Route E: v6.2 LCC Foundation Baseline
+
+Goal is local corridor keeping, independent of Tiger Vanguard or any boss route.
+
+Data:
+
+```powershell
+.\scripts\collect_v57_corrections.ps1 -Duration 10 -Output pathfinding_data_lcc_v1
+.\scripts\prepare_lcc_v1.ps1
+```
+
+Train:
+
+```powershell
+.\scripts\train_lcc_v1.ps1
+```
+
+Evaluate LCC alone:
+
+```powershell
+.\scripts\eval_lcc_v1.ps1 -RunId 001
+```
+
+Evaluate goal navigation with LCC assist:
+
+```powershell
+.\scripts\eval_goal_with_lcc_v1.ps1 -RunId 001
+```
+
+The first LCC-assisted fusion is conservative: the goal policy remains default,
+and the LCC policy only overrides when it predicts a confident local turn.
+
+## Route F: v6.3 Command-Conditioned LCC
+
+Goal is to keep the lower LCC layer small, but make it steerable by a discrete
+local intent. This is the first baseline toward language/control fusion:
+
+- `KEEP_CENTER`
+- `TURN_LEFT_SOON`
+- `TURN_RIGHT_SOON`
+- `AVOID_LEFT_WALL`
+- `AVOID_RIGHT_WALL`
+- `ENTER_LEFT_OPENING`
+- `ENTER_RIGHT_OPENING`
+- `RECOVER_FROM_STUCK`
+
+Data is organized by command directory, and the prepare script writes the
+command id into both `command_ids` and `goal_ids`. Reusing `goal_ids` is
+intentional for this baseline: the existing goal embedding becomes a command
+embedding without changing the model yet.
+
+Collect:
+
+```powershell
+.\scripts\collect_lcc_command.ps1 -Command KEEP_CENTER -Duration 6
+.\scripts\collect_lcc_command.ps1 -Command AVOID_RIGHT_WALL -Duration 4
+.\scripts\collect_lcc_command.ps1 -Command AVOID_LEFT_WALL -Duration 4
+```
+
+Prepare:
+
+```powershell
+.\scripts\prepare_lcc_cmd_v1.ps1
+```
+
+Train:
+
+```powershell
+.\scripts\train_lcc_cmd_v1.ps1
+```
+
+Evaluate Command-LCC alone:
+
+```powershell
+.\scripts\eval_lcc_cmd_v1.ps1 -CommandId 0 -RunId keep_001
+.\scripts\eval_lcc_cmd_v1.ps1 -CommandId 4 -RunId avoid_right_001
+```
+
+Evaluate goal navigation with Command-LCC assist:
+
+```powershell
+.\scripts\eval_goal_with_lcc_cmd_v1.ps1 -CommandId 0 -RunId keep_001
+.\scripts\eval_goal_with_lcc_cmd_v1.ps1 -CommandId 4 -RunId avoid_right_001
+```
+
+This is not yet a language model. It is the control interface that a small
+language or command parser can drive later: text -> command id -> LCC behavior.
+
 ## Comparison Checklist
 
 For every run, record:
@@ -66,6 +154,8 @@ For every run, record:
 - Did it enter the wrong route?
 - Did it reach Tiger Vanguard route?
 - Telemetry: execution rate, forward/turn ratio, bucket distribution, skipped frames.
+- For Command-LCC: command id, scene, initial pose, and whether the command
+  changed behavior compared with `KEEP_CENTER`.
 
 Primary telemetry commands:
 

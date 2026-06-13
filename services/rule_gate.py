@@ -1,5 +1,5 @@
 """BLUE-inspired lightweight runtime gate for policy execution."""
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from collections import deque
 
 from core.types import (
@@ -114,11 +114,9 @@ class RuleGate:
             raw_dx = abs(self.turn_dx)
         else:
             return prediction
-        return Prediction(
-            action_id=prediction.action_id,
-            action_confidence=prediction.action_confidence,
+        return replace(
+            prediction,
             mouse_bucket=bucket,
-            mouse_confidence=prediction.mouse_confidence,
             action_name=ACTION_NAMES.get(prediction.action_id, prediction.action_name),
             raw_mouse_dx=raw_dx,
         )
@@ -131,11 +129,8 @@ class RuleGate:
         return prediction.action_confidence < self.base_threshold
 
     def _with_action(self, prediction: Prediction, action_id: int) -> Prediction:
-        return Prediction(
+        return replace(
+            prediction,
             action_id=action_id,
-            action_confidence=prediction.action_confidence,
-            mouse_bucket=prediction.mouse_bucket,
-            mouse_confidence=prediction.mouse_confidence,
             action_name=ACTION_NAMES.get(action_id, prediction.action_name),
-            raw_mouse_dx=prediction.raw_mouse_dx,
         )

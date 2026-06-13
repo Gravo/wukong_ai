@@ -60,6 +60,15 @@ def analyze(path: Path):
         print("gate_modes:")
         for key, value in gate_modes.most_common():
             print(f"  {key}: {value} ({pct(value, len(rows)):.1f}%)")
+    if rows and "policy_source" in rows[0]:
+        sources = Counter(row.get("policy_source", "") or "unknown" for row in rows)
+        details = Counter(row.get("policy_detail", "") or "none" for row in rows)
+        print("policy_sources:")
+        for key, value in sources.most_common():
+            print(f"  {key}: {value} ({pct(value, len(rows)):.1f}%)")
+        print("policy_details:")
+        for key, value in details.most_common():
+            print(f"  {key}: {value} ({pct(value, len(rows)):.1f}%)")
 
     flags = []
     forward_pct = pct(actions.get("forward", 0), len(executed))

@@ -15,14 +15,33 @@
 - [ ] Reject clips with zero mouse activity, long idle, combat, or hard stuck.
 - [ ] Build an LCC-specific manifest.
 - [ ] Add a short LCC data quality report.
+- [ ] Run `scripts/prepare_lcc_v1.ps1` and inspect the manifest summary.
 
 ## LCC v1 Model
 
 - [ ] Train a dedicated v56-history LCC baseline.
+- [ ] Run `scripts/train_lcc_v1.ps1`.
+- [ ] Run `scripts/eval_lcc_v1.ps1` for LCC-only closed-loop behavior.
+- [ ] Run `scripts/eval_goal_with_lcc_v1.ps1` for goal + LCC fusion.
 - [ ] Compare LCC-only, v59 static, and v61 rule gate on the same local scenes.
 - [ ] Add telemetry fields for LCC override decisions if fused with goal policy.
 - [ ] Define closed-loop LCC metrics: seconds before stuck, switch count,
       forward/turn balance, and bucket collapse rate.
+
+## Command-Conditioned LCC v1
+
+- [ ] Create `pathfinding_data_lcc_cmd_v1` with one subdirectory per command.
+- [ ] Start with three commands: `KEEP_CENTER`, `AVOID_LEFT_WALL`,
+      `AVOID_RIGHT_WALL`.
+- [ ] Record 10-20 clips per command, 3-6 seconds each, from matched poses
+      when possible.
+- [ ] Run `scripts/prepare_lcc_cmd_v1.ps1` and inspect command balance.
+- [ ] Train `scripts/train_lcc_cmd_v1.ps1`.
+- [ ] Compare `KEEP_CENTER` vs wall-avoid commands in the same local scene.
+- [ ] Evaluate route policy + command LCC assist with
+      `scripts/eval_goal_with_lcc_cmd_v1.ps1`.
+- [ ] Decide whether the next input should remain discrete command id or become
+      a tiny text encoder feeding the command embedding.
 
 ## DAgger Loop
 

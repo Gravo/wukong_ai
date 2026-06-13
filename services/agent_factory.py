@@ -14,6 +14,21 @@ def build_agent(config):
         goal_id=config.goal_id,
         device=config.device,
     )
+    if config.lcc_model_path:
+        from policies.lcc_assist_policy import LccAssistPolicy
+
+        lcc_policy = build_policy(
+            name=config.lcc_policy,
+            model_path=config.lcc_model_path,
+            goal_id=config.lcc_command_id,
+            device=config.device,
+        )
+        policy = LccAssistPolicy(
+            route_policy=policy,
+            lcc_policy=lcc_policy,
+            lcc_threshold=config.lcc_threshold,
+            override_frames=config.lcc_override_frames,
+        )
     capture = build_capture(config.capture)
     controller = build_controller(
         config.controller,

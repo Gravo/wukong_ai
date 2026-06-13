@@ -43,6 +43,8 @@ class Prediction:
     mouse_confidence: float
     action_name: str
     raw_mouse_dx: int
+    policy_source: str = "policy"
+    policy_detail: str = ""
 
 
 @dataclass(frozen=True)
@@ -53,4 +55,3 @@ class AgentStep:
     prediction: Optional[Prediction]
     executed: bool
     reason: str = ""
-
